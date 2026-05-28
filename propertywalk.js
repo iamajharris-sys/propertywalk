@@ -82,6 +82,7 @@ var COLLISION_DEFAULTS = [
   {x:955,y:511,w:34,h:20},
   {x:1108,y:422,w:39,h:30},
   {x:961,y:426,w:25,h:26},
+  {x:1504,y:489,w:260,h:93},
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
