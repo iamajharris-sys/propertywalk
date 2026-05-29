@@ -10,7 +10,7 @@ var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18f
 //                  → used for LEFT as-is, mirrored horizontally for RIGHT
 //          row 2 = (kept for reference, unused now)
 //          row 3 = facing UP    (4 frames, static back view)
-var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1a0f517967a995acb77867_sarah_v7_final.png';
+var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1a123b82851905195d55d1_sarah_v7_final.png';
 var CELL = 512;
 // Map facing direction to {row, mirror}. LEFT uses row 1 unmirrored.
 // RIGHT uses the same row 1 mirrored — guarantees identical shuffle both ways.
