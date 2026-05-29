@@ -4,15 +4,19 @@
 // still see the camera-follow + walking working.
 var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18fb36eaf2c95302ebeb26_Map%20V3.png';
 
-// ── SPRITE SHEET (Sarah v2, 4x4 grid of 512px cells) ──
-var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17d903241ea06a10d3a411_Sarah%20v3.png';
+// ── SPRITE SHEET (Sarah v4, 4x4 grid of 512px cells) ──
+// Layout:  row 0 = facing DOWN (4 frames)
+//          row 1 = facing LEFT (4-frame walk)
+//          row 2 = facing RIGHT (4-frame walk)
+//          row 3 = facing UP (4 frames)
+var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1919e451d287b8843ba526_sarah_v4_sprite_transparent.png';
 var CELL = 512;
-// 2-frame walk. We use ONE clean pair (the good right-facing frames) for BOTH
-// directions: as-is for right, mirrored for left. This gives identical body
-// alignment and a consistent clipboard both ways — no body shift, no clipboard flip.
-// ox/oy align the stride frame's body to the straight frame's body.
-var WALK_FRAMES = [ {c:0,r:3,ox:0,oy:0}, {c:2,r:2,ox:0.0527,oy:-0.0201} ];  // straight, stride
-var STAND_FRAME = {c:0,r:3,ox:0,oy:0};
+// Which row of the sprite sheet to use for each facing direction.
+var FACING_ROW = { down:0, left:1, right:2, up:3 };
+// Number of frames per walk cycle (4 in our new sheet).
+var WALK_LEN   = 4;
+// How many game-loop ticks each frame is held (lower = faster animation).
+var FRAME_TICK = 7;
 var PROFILE_ASPECT = 0.78;
 
 var sheet = new Image(); sheet.src = SHEET_URL;
@@ -169,7 +173,7 @@ var canvas, ctx, VW, VH;        // viewport (canvas) size in CSS px
 var ZOOM = 2.2;                 // how zoomed-in the camera is
 var cam = { x:0, y:0 };         // camera top-left in WORLD coords
 
-var P = { x:1024, y:1024, w:72, h:120, faceRight:true, moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0 };
+var P = { x:1024, y:1024, w:72, h:120, facing:'down', moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0 };
 var K = { up:false, down:false, left:false, right:false };
 var JOY = { active:false, vx:0, vy:0, id:null, bx:0, by:0 };
 
@@ -477,23 +481,14 @@ function drawPlayer(){
   ctx.fill();
   ctx.restore();
 
-  // No vertical bob — fixed height, only the leg frames change.
   var dx = footX - sw/2, dy = footY - sh;
 
   if(sheet.complete && sheet.naturalWidth){
-    var f = P.moving ? WALK_FRAMES[P.fr%WALK_FRAMES.length] : STAND_FRAME;
-    var ox=(f.ox||0)*sw, oy=(f.oy||0)*sh;
-    if(P.faceRight){
-      // source frames already face right — draw as-is
-      ctx.drawImage(sheet, f.c*CELL, f.r*CELL, CELL, CELL, dx+ox, dy+oy, sw, sh);
-    } else {
-      // mirror horizontally for left-facing
-      ctx.save();
-      ctx.translate(dx+sw - ox, dy + oy);
-      ctx.scale(-1,1);
-      ctx.drawImage(sheet, f.c*CELL, f.r*CELL, CELL, CELL, 0, 0, sw, sh);
-      ctx.restore();
-    }
+    // Pick row based on facing direction; pick column based on walk frame.
+    // When standing still, lock to frame 0 (the "neutral standing" pose).
+    var row = FACING_ROW[P.facing] !== undefined ? FACING_ROW[P.facing] : FACING_ROW.down;
+    var col = P.moving ? (P.fr % WALK_LEN) : 0;
+    ctx.drawImage(sheet, col*CELL, row*CELL, CELL, CELL, dx, dy, sw, sh);
   } else {
     ctx.fillStyle='#1A2B4A'; ctx.fillRect(dx,dy,sw,sh);
   }
@@ -984,8 +979,15 @@ var loop=function(){
       if(K.up)iy-=1; if(K.down)iy+=1; if(K.left)ix-=1; if(K.right)ix+=1;
     }
   }
-  if(ix>0.05) P.faceRight=true;
-  else if(ix<-0.05) P.faceRight=false;
+  // Update 4-way facing: prefer horizontal direction if both axes are pressed
+  // (matches the side-walking animation which is the most visually polished).
+  if(Math.abs(ix) > Math.abs(iy)){
+    if(ix > 0.05) P.facing = 'right';
+    else if(ix < -0.05) P.facing = 'left';
+  } else {
+    if(iy > 0.05) P.facing = 'down';
+    else if(iy < -0.05) P.facing = 'up';
+  }
 
   var mag=Math.sqrt(ix*ix+iy*iy);
   if(mag>0.12){
@@ -995,7 +997,7 @@ var loop=function(){
     var tryY = Math.max(0,Math.min(WORLD.h, P.y+vy));
     if(canStand(P.x, tryY)) P.y = tryY;
     P.moving=true;
-    P.frT++; if(P.frT>9){ P.fr=(P.fr+1)%2; P.frT=0; }
+    P.frT++; if(P.frT>FRAME_TICK){ P.fr=(P.fr+1)%WALK_LEN; P.frT=0; }
   } else { P.moving=false; P.fr=0; }
 
   // Update game systems
