@@ -9,7 +9,7 @@ var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18f
 //          row 1 = facing LEFT (4-frame walk)
 //          row 2 = facing RIGHT (4-frame walk)
 //          row 3 = facing UP (4 frames)
-var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a191e98eeccb22ae314a538_sarah_v5_sprite_clean.png';
+var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a19f496591fd8eff2dadc78_sarah_v7_final.png';
 var CELL = 512;
 // Which row of the sprite sheet to use for each facing direction.
 var FACING_ROW = { down:0, left:1, right:2, up:3 };
@@ -37,26 +37,26 @@ var COLLISION_DEFAULTS = [
   {x:1970,y:0,w:80,h:2048},
   {x:0,y:1980,w:880,h:70},
   {x:1180,y:1980,w:870,h:70},
-  {x:505,y:223,w:58,h:133},
+  {x:512,y:222,w:54,h:133},
   {x:700,y:1221,w:54,h:39},
-  {x:607,y:237,w:80,h:157},
+  {x:622,y:228,w:54,h:126},
   {x:224,y:402,w:138,h:66},
   {x:220,y:513,w:135,h:53},
   {x:200,y:1050,w:153,h:57},
   {x:190,y:1170,w:170,h:60},
   {x:597,y:943,w:123,h:60},
-  {x:390,y:240,w:62,h:103},
-  {x:1218,y:113,w:51,h:450},
-  {x:1374,y:786,w:102,h:65},
-  {x:780,y:140,w:280,h:100},
+  {x:399,y:242,w:53,h:103},
+  {x:1218,y:113,w:51,h:433},
+  {x:1374,y:786,w:107,h:65},
+  {x:848,y:133,w:99,h:126},
   {x:830,y:329,w:71,h:150},
   {x:763,y:250,w:65,h:107},
   {x:1379,y:129,w:31,h:421},
   {x:1501,y:555,w:469,h:20},
-  {x:1880,y:1220,w:117,h:147},
+  {x:1853,y:768,w:44,h:54},
   {x:1847,y:250,w:37,h:317},
   {x:1544,y:692,w:342,h:28},
-  {x:1440,y:1290,w:530,h:35},
+  {x:1523,y:1294,w:530,h:35},
   {x:1078,y:726,w:214,h:34},
   {x:816,y:783,w:95,h:100},
   {x:1096,y:1074,w:20,h:120},
@@ -72,11 +72,10 @@ var COLLISION_DEFAULTS = [
   {x:721,y:1386,w:20,h:143},
   {x:880,y:1820,w:35,h:180},
   {x:1145,y:1820,w:35,h:180},
-  {x:1340,y:1340,w:35,h:640},
+  {x:1344,y:1453,w:35,h:640},
   {x:1880,y:678,w:147,h:127},
   {x:597,y:550,w:137,h:130},
-  {x:1700,y:1380,w:240,h:300},
-  {x:1400,y:1750,w:540,h:200},
+  {x:1400,y:1791,w:540,h:159},
   {x:879,y:729,w:71,h:101},
   {x:811,y:796,w:128,h:64},
   {x:964,y:991,w:54,h:58},
@@ -89,7 +88,7 @@ var COLLISION_DEFAULTS = [
   {x:876,y:1292,w:71,h:29},
   {x:758,y:1158,w:55,h:44},
   {x:717,y:1193,w:44,h:36},
-  {x:671,y:1242,w:24,h:35},
+  {x:671,y:1235,w:24,h:35},
   {x:656,y:1293,w:35,h:26},
   {x:863,y:1269,w:20,h:48},
   {x:632,y:1305,w:34,h:35},
@@ -106,16 +105,16 @@ var COLLISION_DEFAULTS = [
   {x:1147,y:629,w:170,h:86},
   {x:1399,y:765,w:50,h:56},
   {x:1274,y:235,w:110,h:107},
-  {x:1435,y:828,w:20,h:433},
+  {x:1435,y:828,w:38,h:382},
   {x:1340,y:986,w:98,h:55},
   {x:1173,y:1051,w:31,h:31},
   {x:1369,y:1064,w:29,h:20},
   {x:1489,y:602,w:37,h:31},
   {x:1316,y:660,w:39,h:30},
-  {x:950,y:287,w:141,h:104},
+  {x:959,y:287,w:133,h:104},
   {x:926,y:477,w:33,h:70},
   {x:1083,y:469,w:43,h:76},
-  {x:284,y:143,w:493,h:67},
+  {x:288,y:137,w:531,h:91},
   {x:224,y:714,w:120,h:58},
   {x:212,y:824,w:139,h:63},
   {x:171,y:240,w:43,h:530},
@@ -130,6 +129,70 @@ var COLLISION_DEFAULTS = [
   {x:768,y:1114,w:58,h:36},
   {x:73,y:1173,w:140,h:209},
   {x:72,y:734,w:99,h:141},
+  {x:107,y:853,w:61,h:341},
+  {x:235,y:268,w:36,h:41},
+  {x:260,y:252,w:32,h:33},
+  {x:809,y:300,w:91,h:184},
+  {x:766,y:835,w:20,h:342},
+  {x:640,y:1259,w:38,h:40},
+  {x:612,y:1286,w:37,h:37},
+  {x:820,y:639,w:40,h:48},
+  {x:847,y:666,w:39,h:36},
+  {x:862,y:705,w:46,h:23},
+  {x:948,y:117,w:302,h:87},
+  {x:1121,y:467,w:117,h:84},
+  {x:1395,y:86,w:497,h:146},
+  {x:1561,y:202,w:41,h:100},
+  {x:1651,y:203,w:32,h:89},
+  {x:1738,y:349,w:99,h:32},
+  {x:1739,y:430,w:90,h:28},
+  {x:1732,y:504,w:97,h:29},
+  {x:1740,y:223,w:107,h:57},
+  {x:1748,y:276,w:104,h:38},
+  {x:1577,y:520,w:99,h:37},
+  {x:1395,y:472,w:33,h:53},
+  {x:1641,y:713,w:36,h:90},
+  {x:1737,y:699,w:36,h:107},
+  {x:1692,y:745,w:27,h:20},
+  {x:1631,y:867,w:174,h:317},
+  {x:1450,y:1087,w:104,h:28},
+  {x:1448,y:940,w:106,h:22},
+  {x:1455,y:1003,w:103,h:28},
+  {x:1856,y:934,w:97,h:34},
+  {x:1857,y:1042,w:91,h:36},
+  {x:1857,y:1119,w:97,h:36},
+  {x:1575,y:734,w:34,h:43},
+  {x:1782,y:733,w:106,h:38},
+  {x:1590,y:1261,w:20,h:59},
+  {x:1899,y:871,w:30,h:37},
+  {x:1539,y:730,w:38,h:37},
+  {x:1803,y:1268,w:40,h:34},
+  {x:1871,y:1227,w:46,h:40},
+  {x:1913,y:1172,w:40,h:39},
+  {x:1460,y:1132,w:62,h:39},
+  {x:1527,y:1263,w:44,h:36},
+  {x:1186,y:1131,w:56,h:52},
+  {x:1306,y:1130,w:69,h:30},
+  {x:1379,y:914,w:58,h:77},
+  {x:1142,y:1214,w:77,h:26},
+  {x:1493,y:1312,w:110,h:74},
+  {x:1473,y:1334,w:136,h:54},
+  {x:1452,y:1351,w:138,h:20},
+  {x:1483,y:1360,w:146,h:48},
+  {x:1511,y:1391,w:177,h:36},
+  {x:1445,y:1594,w:49,h:184},
+  {x:1313,y:1506,w:133,h:170},
+  {x:1829,y:1590,w:108,h:252},
+  {x:1373,y:1751,w:157,h:193},
+  {x:1559,y:1394,w:296,h:80},
+  {x:1646,y:1393,w:86,h:128},
+  {x:1843,y:1393,w:84,h:222},
+  {x:1523,y:1358,w:46,h:133},
+  {x:1426,y:1514,w:39,h:172},
+  {x:1336,y:1483,w:67,h:47},
+  {x:983,y:1331,w:242,h:57},
+  {x:1117,y:1353,w:77,h:68},
+  {x:963,y:1490,w:263,h:133},
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
@@ -154,7 +217,7 @@ function flashSaveStatus(ok){
 }
 
 // Editor state
-var SHOW_COLL = true;
+var SHOW_COLL = false;
 var EDIT = false;
 var SEL = -1;
 var FOOT_SEL = false;     // player foot-box selected (resizable, not movable)
@@ -220,6 +283,15 @@ function updateCamera(){
 // so she can stand next to walls without her head clipping things.
 // Player's collision footprint — small box at her feet, editable in edit mode.
 var FOOT = { w:54, h:30 };
+
+// ── HIDE ZONES (doorways / archways) ────────────────────────────
+// When Sarah's feet (P.x, P.y) land inside any zone, her sprite is hidden
+// (shadow stays visible). Creates a "walking through a doorway" effect.
+// Coords are world-space {x, y, w, h} rectangles.
+var HIDE_ZONES = [
+  // Party-room doorway (bottom-right area)
+  { x:1476, y:1460, w:45, h:45 },
+];
 var LS_FOOT_KEY = 'pw_foot_v1';
 function loadFoot(){
   try{ var s=localStorage.getItem(LS_FOOT_KEY); if(s){ var f=JSON.parse(s); if(f && f.w>0 && f.h>0){ FOOT=f; } } }catch(e){}
@@ -472,7 +544,7 @@ function drawPlayer(){
   var sw = sh*a;
   var footX = w2sX(P.x), footY = w2sY(P.y);
 
-  // ── shadow circle on the ground ──
+  // ── shadow circle on the ground (always drawn) ──
   var shW = sw*0.55, shH = shW*0.35;
   ctx.save();
   ctx.fillStyle='rgba(0,0,0,0.22)';
@@ -480,6 +552,13 @@ function drawPlayer(){
   ctx.ellipse(footX, footY, shW/2, shH/2, 0, 0, Math.PI*2);
   ctx.fill();
   ctx.restore();
+
+  // ── doorway hide check: if Sarah's feet are inside any HIDE_ZONE,
+  //    skip drawing her sprite (shadow still shows so player knows she's there).
+  for(var i=0; i<HIDE_ZONES.length; i++){
+    var z = HIDE_ZONES[i];
+    if(P.x >= z.x && P.x <= z.x+z.w && P.y >= z.y && P.y <= z.y+z.h) return;
+  }
 
   var dx = footX - sw/2, dy = footY - sh;
 
