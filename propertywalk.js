@@ -1,1206 +1,209 @@
-// ── MAP IMAGE ──────────────────────────────────────────────────────
-// Paste your Webflow map URL here. The game loads it as the world.
-// Until a real map is set, a placeholder grid world is used so you can
-// still see the camera-follow + walking working.
-var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18fb36eaf2c95302ebeb26_Map%20V3.png';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Property Walk — Map Test</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: transparent; color: #fff; }
 
-// ── SPRITE SHEET (Sarah v7 hybrid, 4x4 grid of 512px cells) ──
-// Layout:  row 0 = facing DOWN (4 frames, mostly static)
-//          row 1 = unused (frames are inconsistent in orientation)
-//          row 2 = SIDE WALK (4-frame walk cycle, all left-facing)
-//                  → used for LEFT as-is, mirrored horizontally for RIGHT
-//          row 3 = facing UP (4 frames, static back view)
-var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a19f496591fd8eff2dadc78_sarah_v7_final.png';
-var CELL = 512;
-// Map facing direction to {row, mirror} so we can render right-facing by
-// mirroring the same row used for left.
-var FACING_FRAME = {
-  down:  { row:0, mirror:false },
-  left:  { row:2, mirror:false },
-  right: { row:2, mirror:true  },
-  up:    { row:3, mirror:false },
-};
-// Number of frames per walk cycle (4 in our new sheet).
-var WALK_LEN   = 4;
-// How many game-loop ticks each frame is held (lower = faster animation).
-var FRAME_TICK = 7;
-var PROFILE_ASPECT = 0.78;
-
-var sheet = new Image(); sheet.src = SHEET_URL;
-var mapImg = new Image(); var mapReady=false, mapFailed=false;
-
-// World dimensions (set once the map loads; placeholder until then)
-var WORLD = { w: 2048, h: 2048 };
-
-// ── COLLISION BOXES (world-pixel coords for the 2048x2048 V3 map) ──
-// Tuned by AJ in the edit layer.
-var COLLISION_DEFAULTS = [
-  {x:0,y:0,w:280,h:140},
-  {x:1770,y:0,w:280,h:140},
-  {x:0,y:1900,w:300,h:148},
-  {x:1750,y:1900,w:300,h:148},
-  {x:0,y:0,w:2048,h:80},
-  {x:0,y:0,w:80,h:2048},
-  {x:1970,y:0,w:80,h:2048},
-  {x:0,y:1980,w:880,h:70},
-  {x:1180,y:1980,w:870,h:70},
-  {x:512,y:222,w:54,h:133},
-  {x:700,y:1221,w:54,h:39},
-  {x:622,y:228,w:54,h:126},
-  {x:224,y:402,w:138,h:66},
-  {x:220,y:513,w:135,h:53},
-  {x:200,y:1050,w:153,h:57},
-  {x:190,y:1170,w:170,h:60},
-  {x:597,y:943,w:123,h:60},
-  {x:399,y:242,w:53,h:103},
-  {x:1218,y:113,w:51,h:433},
-  {x:1374,y:786,w:107,h:65},
-  {x:848,y:133,w:99,h:126},
-  {x:830,y:329,w:71,h:150},
-  {x:763,y:250,w:65,h:107},
-  {x:1379,y:129,w:31,h:421},
-  {x:1501,y:555,w:469,h:20},
-  {x:1853,y:768,w:44,h:54},
-  {x:1847,y:250,w:37,h:317},
-  {x:1544,y:692,w:342,h:28},
-  {x:1523,y:1294,w:530,h:35},
-  {x:1078,y:726,w:214,h:34},
-  {x:816,y:783,w:95,h:100},
-  {x:1096,y:1074,w:20,h:120},
-  {x:1106,y:828,w:395,h:92},
-  {x:1121,y:1133,w:107,h:86},
-  {x:791,y:909,w:50,h:201},
-  {x:263,y:1823,w:235,h:37},
-  {x:80,y:1380,w:480,h:35},
-  {x:220,y:1303,w:380,h:80},
-  {x:590,y:1527,w:32,h:250},
-  {x:960,y:1380,w:35,h:430},
-  {x:580,y:1800,w:415,h:35},
-  {x:721,y:1386,w:20,h:143},
-  {x:880,y:1820,w:35,h:180},
-  {x:1145,y:1820,w:35,h:180},
-  {x:1344,y:1453,w:35,h:640},
-  {x:1880,y:678,w:147,h:127},
-  {x:597,y:550,w:137,h:130},
-  {x:1400,y:1791,w:540,h:159},
-  {x:879,y:729,w:71,h:101},
-  {x:811,y:796,w:128,h:64},
-  {x:964,y:991,w:54,h:58},
-  {x:1096,y:831,w:20,h:180},
-  {x:1142,y:987,w:96,h:59},
-  {x:1322,y:1133,w:108,h:90},
-  {x:932,y:1235,w:70,h:119},
-  {x:922,y:1248,w:61,h:50},
-  {x:832,y:1333,w:134,h:28},
-  {x:876,y:1292,w:71,h:29},
-  {x:758,y:1158,w:55,h:44},
-  {x:717,y:1193,w:44,h:36},
-  {x:671,y:1235,w:24,h:35},
-  {x:656,y:1293,w:35,h:26},
-  {x:863,y:1269,w:20,h:48},
-  {x:632,y:1305,w:34,h:35},
-  {x:596,y:1328,w:43,h:33},
-  {x:807,y:1367,w:151,h:33},
-  {x:701,y:1405,w:29,h:34},
-  {x:672,y:1432,w:31,h:26},
-  {x:653,y:1458,w:35,h:24},
-  {x:997,y:1265,w:35,h:25},
-  {x:999,y:1314,w:221,h:20},
-  {x:1024,y:1289,w:34,h:20},
-  {x:1511,y:577,w:262,h:104},
-  {x:1467,y:619,w:48,h:42},
-  {x:1147,y:629,w:170,h:86},
-  {x:1399,y:765,w:50,h:56},
-  {x:1274,y:235,w:110,h:107},
-  {x:1435,y:828,w:38,h:382},
-  {x:1340,y:986,w:98,h:55},
-  {x:1173,y:1051,w:31,h:31},
-  {x:1369,y:1064,w:29,h:20},
-  {x:1489,y:602,w:37,h:31},
-  {x:1316,y:660,w:39,h:30},
-  {x:959,y:287,w:133,h:104},
-  {x:926,y:477,w:33,h:70},
-  {x:1083,y:469,w:43,h:76},
-  {x:288,y:137,w:531,h:91},
-  {x:224,y:714,w:120,h:58},
-  {x:212,y:824,w:139,h:63},
-  {x:171,y:240,w:43,h:530},
-  {x:196,y:169,w:93,h:125},
-  {x:664,y:667,w:191,h:116},
-  {x:699,y:607,w:91,h:59},
-  {x:606,y:660,w:66,h:61},
-  {x:716,y:784,w:104,h:64},
-  {x:692,y:579,w:65,h:56},
-  {x:687,y:753,w:83,h:54},
-  {x:630,y:708,w:56,h:46},
-  {x:768,y:1114,w:58,h:36},
-  {x:73,y:1173,w:140,h:209},
-  {x:72,y:734,w:99,h:141},
-  {x:107,y:853,w:61,h:341},
-  {x:235,y:268,w:36,h:41},
-  {x:260,y:252,w:32,h:33},
-  {x:809,y:300,w:91,h:184},
-  {x:766,y:835,w:20,h:342},
-  {x:640,y:1259,w:38,h:40},
-  {x:612,y:1286,w:37,h:37},
-  {x:820,y:639,w:40,h:48},
-  {x:847,y:666,w:39,h:36},
-  {x:862,y:705,w:46,h:23},
-  {x:948,y:117,w:302,h:87},
-  {x:1121,y:467,w:117,h:84},
-  {x:1395,y:86,w:497,h:146},
-  {x:1561,y:202,w:41,h:100},
-  {x:1651,y:203,w:32,h:89},
-  {x:1738,y:349,w:99,h:32},
-  {x:1739,y:430,w:90,h:28},
-  {x:1732,y:504,w:97,h:29},
-  {x:1740,y:223,w:107,h:57},
-  {x:1748,y:276,w:104,h:38},
-  {x:1577,y:520,w:99,h:37},
-  {x:1395,y:472,w:33,h:53},
-  {x:1641,y:713,w:36,h:90},
-  {x:1737,y:699,w:36,h:107},
-  {x:1692,y:745,w:27,h:20},
-  {x:1631,y:867,w:174,h:317},
-  {x:1450,y:1087,w:104,h:28},
-  {x:1448,y:940,w:106,h:22},
-  {x:1455,y:1003,w:103,h:28},
-  {x:1856,y:934,w:97,h:34},
-  {x:1857,y:1042,w:91,h:36},
-  {x:1857,y:1119,w:97,h:36},
-  {x:1575,y:734,w:34,h:43},
-  {x:1782,y:733,w:106,h:38},
-  {x:1590,y:1261,w:20,h:59},
-  {x:1899,y:871,w:30,h:37},
-  {x:1539,y:730,w:38,h:37},
-  {x:1803,y:1268,w:40,h:34},
-  {x:1871,y:1227,w:46,h:40},
-  {x:1913,y:1172,w:40,h:39},
-  {x:1460,y:1132,w:62,h:39},
-  {x:1527,y:1263,w:44,h:36},
-  {x:1186,y:1131,w:56,h:52},
-  {x:1306,y:1130,w:69,h:30},
-  {x:1379,y:914,w:58,h:77},
-  {x:1142,y:1214,w:77,h:26},
-  {x:1493,y:1312,w:110,h:74},
-  {x:1473,y:1334,w:136,h:54},
-  {x:1452,y:1351,w:138,h:20},
-  {x:1483,y:1360,w:146,h:48},
-  {x:1511,y:1391,w:177,h:36},
-  {x:1445,y:1594,w:49,h:184},
-  {x:1313,y:1506,w:133,h:170},
-  {x:1829,y:1590,w:108,h:252},
-  {x:1373,y:1751,w:157,h:193},
-  {x:1559,y:1394,w:296,h:80},
-  {x:1646,y:1393,w:86,h:128},
-  {x:1843,y:1393,w:84,h:222},
-  {x:1523,y:1358,w:46,h:133},
-  {x:1426,y:1514,w:39,h:172},
-  {x:1336,y:1483,w:67,h:47},
-  {x:983,y:1331,w:242,h:57},
-  {x:1117,y:1353,w:77,h:68},
-  {x:963,y:1490,w:263,h:133},
-];
-
-// Per-session edits (overrides). Persists to localStorage on the live site.
-var LS_KEY = 'pw_collisions_v2';
-var COLLISIONS = [];
-var LS_OK = true;  // becomes false if localStorage is blocked (e.g. preview sandbox)
-function loadCollisions(){
-  try{ var s=localStorage.getItem(LS_KEY); if(s){ COLLISIONS=JSON.parse(s); return; } }catch(e){ LS_OK=false; }
-  COLLISIONS = COLLISION_DEFAULTS.map(function(b){ return {x:b.x,y:b.y,w:b.w,h:b.h}; });
+.ct-card {
+  width: 100%; max-width: 720px; margin: 40px auto; overflow: hidden;
+  background: #ffffff; border: 1px solid rgba(0,0,0,0.1); box-shadow: 0 32px 80px rgba(0,0,0,0.25); display: block;
 }
-function saveCollisions(){
-  try{ localStorage.setItem(LS_KEY, JSON.stringify(COLLISIONS)); flashSaveStatus(true); }
-  catch(e){ LS_OK=false; flashSaveStatus(false); }
-}
-function flashSaveStatus(ok){
-  var el = document.getElementById('save-status'); if(!el) return;
-  el.textContent = ok ? '✓ saved ('+COLLISIONS.length+')' : '⚠ LS blocked — use Export';
-  el.style.color = ok ? '#7CFC9A' : '#F5A623';
-  clearTimeout(flashSaveStatus._t);
-  flashSaveStatus._t = setTimeout(function(){ if(ok) el.style.opacity='0.5'; }, 1500);
-  el.style.opacity='1';
-}
-
-// Editor state
-var SHOW_COLL = false;
-var EDIT = false;
-var SEL = -1;
-var FOOT_SEL = false;     // player foot-box selected (resizable, not movable)
-var DRAG = null;
-var HANDLE_SIZE = 14;
-
-function loadMap(){
-  if(!MAP_URL || MAP_URL==='PASTE_MAP_CDN_URL_HERE'){ mapFailed=true; document.getElementById('mapstatus').textContent='placeholder world (no map set)'; return; }
-  mapImg.onload=function(){ mapReady=true; WORLD.w=mapImg.naturalWidth; WORLD.h=mapImg.naturalHeight; document.getElementById('mapstatus').textContent='map '+WORLD.w+'×'+WORLD.h; placePlayer(); };
-  mapImg.onerror=function(){ mapFailed=true; document.getElementById('mapstatus').textContent='map failed to load — placeholder'; };
-  mapImg.src=MAP_URL;
-}
-
-// ── CANVAS / CAMERA ─────────────────────────────────────────────────
-var canvas, ctx, VW, VH;        // viewport (canvas) size in CSS px
-var ZOOM = 2.2;                 // how zoomed-in the camera is
-var cam = { x:0, y:0 };         // camera top-left in WORLD coords
-
-var P = { x:1024, y:1024, w:72, h:120, facing:'down', moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0 };
-var K = { up:false, down:false, left:false, right:false };
-var JOY = { active:false, vx:0, vy:0, id:null, bx:0, by:0 };
-
-function sizeCanvas(){
-  VW=canvas.offsetWidth; VH=canvas.offsetHeight;
-  var dpr=window.devicePixelRatio||1;
-  canvas.width=VW*dpr; canvas.height=VH*dpr;
-  canvas.style.width=VW+'px'; canvas.style.height=VH+'px';
-  ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
-}
-
-function placePlayer(){
-  // V2 map: spawn in central lobby hallway hub (around the round desk)
-  P.x=WORLD.w*0.45; P.y=WORLD.h*0.48;
-  // If that lands inside a wall, spiral outward to find clear ground
-  if(!canStand(P.x, P.y)){
-    var step = 40;
-    outer: for(var r=1;r<60;r++){
-      for(var a=0;a<8;a++){
-        var ang=a*Math.PI/4;
-        var tx=P.x+Math.cos(ang)*step*r, ty=P.y+Math.sin(ang)*step*r;
-        if(canStand(tx,ty)){ P.x=tx; P.y=ty; break outer; }
-      }
-    }
-  }
-}
-
-// Convert world coords to screen coords given the camera + zoom
-function w2sX(wx){ return (wx - cam.x)*ZOOM; }
-function w2sY(wy){ return (wy - cam.y)*ZOOM; }
-
-function updateCamera(){
-  // Center camera on player, then clamp so we never show outside the world.
-  var halfW = VW/(2*ZOOM), halfH = VH/(2*ZOOM);
-  cam.x = P.x - halfW;
-  cam.y = P.y - halfH;
-  // Clamp. If the world is smaller than the viewport at this zoom, center it.
-  var maxX = WORLD.w - VW/ZOOM, maxY = WORLD.h - VH/ZOOM;
-  if(maxX < 0) cam.x = maxX/2; else cam.x = Math.max(0, Math.min(maxX, cam.x));
-  if(maxY < 0) cam.y = maxY/2; else cam.y = Math.max(0, Math.min(maxY, cam.y));
-}
-
-// Player's collision footprint is a small box at her feet (not the full sprite),
-// so she can stand next to walls without her head clipping things.
-// Player's collision footprint — small box at her feet, editable in edit mode.
-var FOOT = { w:54, h:30 };
-
-// ── HIDE ZONES (doorways / archways) ────────────────────────────
-// When Sarah's feet (P.x, P.y) land inside any zone, her sprite is hidden
-// (shadow stays visible). Creates a "walking through a doorway" effect.
-// Coords are world-space {x, y, w, h} rectangles.
-var HIDE_ZONES = [
-  // Party-room doorway (bottom-right area)
-  { x:1476, y:1460, w:45, h:45 },
-];
-var LS_FOOT_KEY = 'pw_foot_v1';
-function loadFoot(){
-  try{ var s=localStorage.getItem(LS_FOOT_KEY); if(s){ var f=JSON.parse(s); if(f && f.w>0 && f.h>0){ FOOT=f; } } }catch(e){}
-}
-function saveFoot(){ try{ localStorage.setItem(LS_FOOT_KEY, JSON.stringify(FOOT)); flashSaveStatus(true); }catch(e){ flashSaveStatus(false); } }
-function footBox(x,y){ return {x:x-FOOT.w/2, y:y-FOOT.h, w:FOOT.w, h:FOOT.h}; }
-function rectOverlap(a,b){ return a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y; }
-function canStand(x,y){
-  var f = footBox(x,y);
-  for(var i=0;i<COLLISIONS.length;i++){ if(rectOverlap(f, COLLISIONS[i])) return false; }
-  return true;
-}
-
-function drawWorld(){
-  if(mapReady){
-    // draw the visible slice of the map, scaled by zoom
-    ctx.imageSmoothingEnabled=true;
-    ctx.drawImage(mapImg, cam.x, cam.y, VW/ZOOM, VH/ZOOM, 0, 0, VW, VH);
-  } else {
-    // placeholder: checker/grid world so camera motion is visible
-    ctx.fillStyle='#e9ecf1'; ctx.fillRect(0,0,VW,VH);
-    var grid=128; // world units
-    ctx.strokeStyle='rgba(40,60,90,0.18)'; ctx.lineWidth=1;
-    var startX = Math.floor(cam.x/grid)*grid;
-    for(var gx=startX; gx<cam.x+VW/ZOOM; gx+=grid){
-      var sx=w2sX(gx); ctx.beginPath(); ctx.moveTo(sx,0); ctx.lineTo(sx,VH); ctx.stroke();
-    }
-    var startY = Math.floor(cam.y/grid)*grid;
-    for(var gy=startY; gy<cam.y+VH/ZOOM; gy+=grid){
-      var sy=w2sY(gy); ctx.beginPath(); ctx.moveTo(0,sy); ctx.lineTo(VW,sy); ctx.stroke();
-    }
-    // world border
-    ctx.strokeStyle='rgba(204,34,0,0.6)'; ctx.lineWidth=3;
-    ctx.strokeRect(w2sX(0), w2sY(0), WORLD.w*ZOOM, WORLD.h*ZOOM);
-    ctx.fillStyle='rgba(40,60,90,0.4)'; ctx.font='12px IBM Plex Mono'; ctx.textAlign='center';
-    ctx.fillText('PLACEHOLDER WORLD — paste MAP_URL to load your map', VW/2, 20);
-  }
-}
-
-// World coords for a screen point (used by editor mouse input)
-function s2wX(sx){ return sx/ZOOM + cam.x; }
-function s2wY(sy){ return sy/ZOOM + cam.y; }
-
-function drawCollisions(){
-  if(!SHOW_COLL && !EDIT) return;
-  for(var i=0;i<COLLISIONS.length;i++){
-    var b=COLLISIONS[i];
-    var x=w2sX(b.x), y=w2sY(b.y), w=b.w*ZOOM, h=b.h*ZOOM;
-    if(x+w<-10||y+h<-10||x>VW+10||y>VH+10) continue;  // cull offscreen
-    var isSel = EDIT && i===SEL;
-    ctx.fillStyle = isSel ? 'rgba(41,171,226,0.30)' : 'rgba(204,34,0,0.22)';
-    ctx.fillRect(x,y,w,h);
-    ctx.strokeStyle = isSel ? 'rgba(41,171,226,1)' : 'rgba(255,60,30,0.85)';
-    ctx.lineWidth = isSel ? 2 : 1.2;
-    ctx.strokeRect(x,y,w,h);
-    if(EDIT){
-      ctx.fillStyle='rgba(255,255,255,0.85)'; ctx.font='9px IBM Plex Mono'; ctx.textAlign='left';
-      ctx.fillText(i, x+3, y+10);
-      if(isSel){
-        // resize handles
-        var hs=HANDLE_SIZE;
-        handlePoints(b).forEach(function(hp){
-          var hx=w2sX(hp.x), hy=w2sY(hp.y);
-          ctx.fillStyle='#fff'; ctx.fillRect(hx-hs/2,hy-hs/2,hs,hs);
-          ctx.strokeStyle='#29ABE2'; ctx.lineWidth=1; ctx.strokeRect(hx-hs/2,hy-hs/2,hs,hs);
-        });
-      }
-    }
-  }
-  // ── Player foot-box (always shown in edit mode) ──
-  if(EDIT){
-    var f = footBox(P.x, P.y);
-    var fx=w2sX(f.x), fy=w2sY(f.y), fw=f.w*ZOOM, fh=f.h*ZOOM;
-    ctx.fillStyle = FOOT_SEL ? 'rgba(245,166,35,0.32)' : 'rgba(41,171,226,0.30)';
-    ctx.fillRect(fx,fy,fw,fh);
-    ctx.strokeStyle = FOOT_SEL ? 'rgba(245,166,35,1)' : 'rgba(41,171,226,1)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(fx,fy,fw,fh);
-    ctx.fillStyle='#fff'; ctx.font='bold 9px IBM Plex Mono'; ctx.textAlign='left';
-    ctx.fillText('PLAYER w:'+Math.round(FOOT.w)+' h:'+Math.round(FOOT.h), fx+3, fy-4);
-    if(FOOT_SEL){
-      var hs=HANDLE_SIZE;
-      handlePoints(f).forEach(function(hp){
-        var hx=w2sX(hp.x), hy=w2sY(hp.y);
-        ctx.fillStyle='#fff'; ctx.fillRect(hx-hs/2,hy-hs/2,hs,hs);
-        ctx.strokeStyle='#F5A623'; ctx.lineWidth=1; ctx.strokeRect(hx-hs/2,hy-hs/2,hs,hs);
-      });
-    }
-  }
-}
-
-// 8 handle positions on a world-coord box
-function handlePoints(b){
-  return [
-    {k:'nw',x:b.x,        y:b.y       },
-    {k:'n', x:b.x+b.w/2,  y:b.y       },
-    {k:'ne',x:b.x+b.w,    y:b.y       },
-    {k:'e', x:b.x+b.w,    y:b.y+b.h/2 },
-    {k:'se',x:b.x+b.w,    y:b.y+b.h   },
-    {k:'s', x:b.x+b.w/2,  y:b.y+b.h   },
-    {k:'sw',x:b.x,        y:b.y+b.h   },
-    {k:'w', x:b.x,        y:b.y+b.h/2 },
-  ];
-}
-
-// ── EDITOR ───────────────────────────────────────────────────────────
-function toggleColl(){ SHOW_COLL=!SHOW_COLL; var b=document.getElementById('btn-coll'); b.textContent='Collision: '+(SHOW_COLL?'ON':'OFF'); b.classList.toggle('on',SHOW_COLL); }
-function toggleEdit(){
-  EDIT=!EDIT;
-  var b=document.getElementById('btn-edit');
-  b.textContent='✎ Edit: '+(EDIT?'ON':'OFF');
-  b.classList.toggle('on',EDIT);
-  document.getElementById('edit-bar').classList.toggle('show',EDIT);
-  if(!EDIT) SEL=-1;
-}
-
-function pointInRect(px,py,r){ return px>=r.x && px<=r.x+r.w && py>=r.y && py<=r.y+r.h; }
-function evToWorld(e){
-  var r=canvas.getBoundingClientRect();
-  var cx=(e.touches?e.touches[0].clientX:e.clientX) - r.left;
-  var cy=(e.touches?e.touches[0].clientY:e.clientY) - r.top;
-  return {x:s2wX(cx), y:s2wY(cy), sx:cx, sy:cy};
-}
-
-function editStart(e){
-  if(!EDIT) return;
-  e.preventDefault();
-  var m=evToWorld(e);
-  var hsW = HANDLE_SIZE/ZOOM;
-
-  // PRIORITY 1: if foot box is selected, check its handles
-  if(FOOT_SEL){
-    var fb = footBox(P.x, P.y);
-    var fpts = handlePoints(fb);
-    for(var i=0;i<fpts.length;i++){
-      if(Math.abs(m.x-fpts[i].x) < hsW && Math.abs(m.y-fpts[i].y) < hsW){
-        DRAG = {target:'foot', handle:fpts[i].k, mx:m.x, my:m.y, orig:{w:FOOT.w, h:FOOT.h}};
-        return;
-      }
-    }
-  }
-  // PRIORITY 2: if a wall box is selected, check its handles
-  if(SEL>=0 && COLLISIONS[SEL]){
-    var b=COLLISIONS[SEL];
-    var pts=handlePoints(b);
-    for(var i=0;i<pts.length;i++){
-      if(Math.abs(m.x-pts[i].x) < hsW && Math.abs(m.y-pts[i].y) < hsW){
-        DRAG = {target:'box', mode:'resize', handle:pts[i].k, mx:m.x, my:m.y, orig:{x:b.x,y:b.y,w:b.w,h:b.h}};
-        return;
-      }
-    }
-  }
-  // PRIORITY 3: clicked the foot box body? Select foot, don't drag (position locked)
-  var fb2 = footBox(P.x, P.y);
-  if(pointInRect(m.x, m.y, fb2)){
-    FOOT_SEL = true; SEL = -1; DRAG = null;
-    return;
-  }
-  // PRIORITY 4: topmost wall box under cursor
-  var idx=-1;
-  for(var j=COLLISIONS.length-1;j>=0;j--){
-    if(pointInRect(m.x,m.y,COLLISIONS[j])){ idx=j; break; }
-  }
-  SEL = idx; FOOT_SEL = false;
-  if(idx>=0){
-    var b2=COLLISIONS[idx];
-    DRAG={target:'box', mode:'move', mx:m.x, my:m.y, orig:{x:b2.x,y:b2.y,w:b2.w,h:b2.h}};
-  } else { DRAG=null; }
-}
-function editMove(e){
-  if(!EDIT||!DRAG) return;
-  e.preventDefault();
-  var m=evToWorld(e), g=DRAG.orig;
-  var dx=m.x-DRAG.mx, dy=m.y-DRAG.my;
-  var MIN=20;
-  if(DRAG.target==='foot'){
-    // Resize the player foot box, keeping it centered on the player.
-    // Handle direction determines whether we change W, H, or both.
-    var nw=g.w, nh=g.h, hk=DRAG.handle;
-    if(hk.indexOf('w')>=0) nw = g.w - dx*2;       // pulling west: expand symmetrically
-    if(hk.indexOf('e')>=0) nw = g.w + dx*2;
-    if(hk.indexOf('n')>=0) nh = g.h - dy*2;
-    if(hk.indexOf('s')>=0) nh = g.h + dy*2;
-    FOOT.w = Math.max(MIN, nw);
-    FOOT.h = Math.max(MIN, nh);
-    return;
-  }
-  // Wall box drag/resize (existing logic)
-  if(SEL<0) return;
-  var b=COLLISIONS[SEL];
-  if(DRAG.mode==='move'){ b.x=g.x+dx; b.y=g.y+dy; }
-  else {
-    var nx=g.x, ny=g.y, nw=g.w, nh=g.h, hk=DRAG.handle;
-    if(hk.indexOf('w')>=0){ nx=g.x+dx; nw=g.w-dx; }
-    if(hk.indexOf('e')>=0){ nw=g.w+dx; }
-    if(hk.indexOf('n')>=0){ ny=g.y+dy; nh=g.h-dy; }
-    if(hk.indexOf('s')>=0){ nh=g.h+dy; }
-    if(nw<MIN){ if(hk.indexOf('w')>=0) nx=g.x+g.w-MIN; nw=MIN; }
-    if(nh<MIN){ if(hk.indexOf('n')>=0) ny=g.y+g.h-MIN; nh=MIN; }
-    b.x=nx; b.y=ny; b.w=nw; b.h=nh;
-  }
-}
-function editEnd(){
-  if(DRAG){
-    if(DRAG.target==='foot') saveFoot();
-    else saveCollisions();
-    DRAG=null;
-  }
-}
-
-function addBox(){
-  if(!EDIT) return;
-  // Place at the CURRENT VIEW CENTER (camera + half viewport in world units)
-  // so it always appears on screen no matter where you're looking.
-  var cxW = cam.x + (VW/2)/ZOOM;
-  var cyW = cam.y + (VH/2)/ZOOM;
-  var sizeW = 200/ZOOM > 80 ? 200/ZOOM : 80;  // scale so it's a reasonable on-screen size
-  var nb = { x: cxW - sizeW/2, y: cyW - sizeW/2, w: sizeW, h: sizeW };
-  COLLISIONS.push(nb);
-  SEL = COLLISIONS.length-1;
-  saveCollisions();
-}
-function deleteSelected(){
-  if(!EDIT||SEL<0) return;
-  COLLISIONS.splice(SEL,1); SEL=-1; saveCollisions();
-}
-function resetBoxes(){
-  if(!confirm('Reset all collision boxes to the defaults? Your edits will be lost.')) return;
-  COLLISIONS = COLLISION_DEFAULTS.map(function(b){ return {x:b.x,y:b.y,w:b.w,h:b.h}; });
-  SEL=-1; saveCollisions();
-}
-function exportBoxes(){
-  var body = COLLISIONS.map(function(b){
-    return '  {x:'+Math.round(b.x)+',y:'+Math.round(b.y)+',w:'+Math.round(b.w)+',h:'+Math.round(b.h)+'}';
-  }).join(',\n');
-  var out = '// player foot box\nFOOT = {w:'+Math.round(FOOT.w)+', h:'+Math.round(FOOT.h)+'};\n\n'
-         + '// collision boxes\n[\n'+body+'\n]';
-  document.getElementById('export-text').value = out;
-  document.getElementById('export-pane').classList.add('show');
-}
-function closeExport(){ document.getElementById('export-pane').classList.remove('show'); }
-function copyExport(){
-  var ta=document.getElementById('export-text'); ta.select();
-  try{ navigator.clipboard.writeText(ta.value); }catch(e){ document.execCommand('copy'); }
-}
-
-function drawPlayer(){
-  var a = PROFILE_ASPECT;
-  var sh = P.h*ZOOM;
-  var sw = sh*a;
-  var footX = w2sX(P.x), footY = w2sY(P.y);
-
-  // ── shadow circle on the ground (always drawn) ──
-  var shW = sw*0.55, shH = shW*0.35;
-  ctx.save();
-  ctx.fillStyle='rgba(0,0,0,0.22)';
-  ctx.beginPath();
-  ctx.ellipse(footX, footY, shW/2, shH/2, 0, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-
-  // ── doorway hide check: if Sarah's feet are inside any HIDE_ZONE,
-  //    skip drawing her sprite (shadow still shows so player knows she's there).
-  for(var i=0; i<HIDE_ZONES.length; i++){
-    var z = HIDE_ZONES[i];
-    if(P.x >= z.x && P.x <= z.x+z.w && P.y >= z.y && P.y <= z.y+z.h) return;
-  }
-
-  var dx = footX - sw/2, dy = footY - sh;
-
-  if(sheet.complete && sheet.naturalWidth){
-    // Look up which row and whether to mirror, based on facing direction.
-    var f = FACING_FRAME[P.facing] || FACING_FRAME.down;
-    var col = P.moving ? (P.fr % WALK_LEN) : 0;
-    if(f.mirror){
-      // Flip the sprite horizontally by scaling x by -1.
-      ctx.save();
-      ctx.translate(dx + sw, dy);
-      ctx.scale(-1, 1);
-      ctx.drawImage(sheet, col*CELL, f.row*CELL, CELL, CELL, 0, 0, sw, sh);
-      ctx.restore();
-    } else {
-      ctx.drawImage(sheet, col*CELL, f.row*CELL, CELL, CELL, dx, dy, sw, sh);
-    }
-  } else {
-    ctx.fillStyle='#1A2B4A'; ctx.fillRect(dx,dy,sw,sh);
-  }
-}
-
-// ── MENU MUSIC ────────────────────────────────────────────────────
-// Plays on the menu screen, fades out when game starts, fades back in on return.
-// Starts MUTED with a "tap to unmute" hint — the user's tap unlocks autoplay AND
-// is treated as them choosing to enable music. Mute state persists.
-var MENU_MUSIC_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17767e0994d0963646739d_cozypuzzleclearmix.ogg';
-var menuMusic = new Audio(MENU_MUSIC_URL);
-menuMusic.loop = true;
-menuMusic.volume = 0.6;
-var MUSIC_VOL = 0.6;
-var IS_MUTED = true;            // start muted, user taps to enable
-var musicFadeT = null;
-
-function tryPlayMenuMusic(){
-  if(IS_MUTED) return;
-  var p = menuMusic.play();
-  if(p && p.catch){ p.catch(function(){ /* autoplay blocked — handled by toggleMute */ }); }
-}
-
-function toggleMute(e){
-  if(e){ e.stopPropagation(); }
-  IS_MUTED = !IS_MUTED;
-  var btn = document.getElementById('mute-btn');
-  var iconOn  = document.getElementById('mute-icon-on');
-  var iconOff = document.getElementById('mute-icon-off');
-  if(IS_MUTED){
-    menuMusic.pause();
-    btn.classList.remove('unmuted');
-    iconOn.style.display='none';
-    iconOff.style.display='block';
-  } else {
-    btn.classList.add('unmuted');
-    iconOn.style.display='block';
-    iconOff.style.display='none';
-    menuMusic.volume = MUSIC_VOL;
-    var p = menuMusic.play();
-    if(p && p.catch){ p.catch(function(){}); }
-  }
-}
-
-function fadeOutMenuMusic(){
-  if(IS_MUTED){ return; }
-  if(musicFadeT){ clearInterval(musicFadeT); musicFadeT=null; }
-  musicFadeT = setInterval(function(){
-    if(menuMusic.volume > 0.04){ menuMusic.volume -= 0.04; }
-    else { menuMusic.pause(); menuMusic.currentTime=0; menuMusic.volume=MUSIC_VOL; clearInterval(musicFadeT); musicFadeT=null; }
-  }, 60);
-}
-
-function fadeInMenuMusic(){
-  if(IS_MUTED){ return; }
-  if(musicFadeT){ clearInterval(musicFadeT); musicFadeT=null; }
-  menuMusic.volume = 0;
-  var p = menuMusic.play();
-  if(p && p.catch){ p.catch(function(){}); }
-  musicFadeT = setInterval(function(){
-    if(menuMusic.volume < MUSIC_VOL-0.04){ menuMusic.volume += 0.04; }
-    else { menuMusic.volume = MUSIC_VOL; clearInterval(musicFadeT); musicFadeT=null; }
-  }, 60);
-}
-
-// ── GAMEPLAY MUSIC ────────────────────────────────────────────────
-// Plays in a loop while STATE === 'playing'. Fades out on game over,
-// fades back in on next play.
-var GAMEPLAY_MUSIC_URL = 'https://cdn.jsdelivr.net/gh/iamajharris-sys/propertywalk@main/happy_adveture.mp3';
-var gameplayMusic = new Audio(GAMEPLAY_MUSIC_URL);
-gameplayMusic.loop = true;
-gameplayMusic.volume = MUSIC_VOL;
-var gameplayFadeT = null;
-
-function startGameplayMusic(){
-  if(IS_MUTED){ return; }
-  if(gameplayFadeT){ clearInterval(gameplayFadeT); gameplayFadeT=null; }
-  gameplayMusic.currentTime = 0;
-  gameplayMusic.volume = 0;
-  var p = gameplayMusic.play();
-  if(p && p.catch){ p.catch(function(){}); }
-  gameplayFadeT = setInterval(function(){
-    if(gameplayMusic.volume < MUSIC_VOL-0.04){ gameplayMusic.volume += 0.04; }
-    else { gameplayMusic.volume = MUSIC_VOL; clearInterval(gameplayFadeT); gameplayFadeT=null; }
-  }, 60);
-}
-
-function stopGameplayMusic(){
-  if(gameplayFadeT){ clearInterval(gameplayFadeT); gameplayFadeT=null; }
-  gameplayFadeT = setInterval(function(){
-    if(gameplayMusic.volume > 0.04){ gameplayMusic.volume -= 0.04; }
-    else { gameplayMusic.pause(); gameplayMusic.currentTime=0; gameplayMusic.volume=MUSIC_VOL; clearInterval(gameplayFadeT); gameplayFadeT=null; }
-  }, 60);
-}
-
-// ──────────────────────────────────────────────────────────────────
-// GAME STATE MACHINE
-// ──────────────────────────────────────────────────────────────────
-var STATE = 'menu';   // 'menu' | 'playing' (more states later: 'won','lost')
-
-// Power-item sprite sheet — single image with 5 items in a row.
-// We use 3 of them by their column index: present(2), phone(3), key(4).
-var ITEMS_SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17aa21c4c836a09c426dbb_Task_icons.png';
-var ITEMS_SHEET_COLS = 5;
-var ITEM_CELL = {       // which column of the sheet each item uses
-  key:     4,
-  phone:   3,
-  present: 2,
-};
-var ITEM_COLORS = { key:'#F5A623', phone:'#CC2200', present:'#D2691E' };
-var ITEM_EMOJI  = { key:'🔑', phone:'📞', present:'🎁' };
-var itemsSheet = new Image(); itemsSheet.src = ITEMS_SHEET_URL;
-
-// Item world objects: each {id, x, y, taken:false, bobT}
-var ITEMS = [];
-// Inventory: which item ids have been picked up
-var INV = { key:false, phone:false, present:false };
-
-// Power Mode
-var POWER_MODE = false;
-var POWER_MS = 15000;          // 15-second window
-var powerEnds = 0;             // performance.now() ms when power expires
-
-// Zombies
-// Each zombie character has a 2x2 sprite sheet: down/up/right/left.
-// (Same layout as Sarah v1 / Grumpy / Karen.)
-// ── DEV TOGGLE: flip to true to enable zombies, false to remove them
-//    (useful when tuning collision so they don't chase you)
-var ZOMBIES_ENABLED = false;
-
-var ZOMBIE_CHARACTERS = {
-  grumpy:     { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a7444c5deaf6ef798a00_Grumpy_man.png',      name:'Grumpy' },
-  karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen' },
-  complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a77971435c1aee6471ee_Complainer_sprites.png',name:'Complainer' },
-};
-// Cell map for 2x2 (col,row) — same convention as Grumpy: r0c0 down, r0c1 up, r1c0 right, r1c1 left
-var ZOMBIE_CELL = {
-  down:  {c:0,r:0},
-  up:    {c:1,r:0},
-  right: {c:0,r:1},
-  left:  {c:1,r:1},
-};
-// Load zombie sprite images
-var zombieImgs = {};
-Object.keys(ZOMBIE_CHARACTERS).forEach(function(k){
-  var im = new Image(); im.src = ZOMBIE_CHARACTERS[k].url;
-  zombieImgs[k] = im;
-});
-
-// One zombie of each character on the map
-var ZOMBIE_DETECT = 280;       // px proximity for detection
-var ZOMBIE_VISION_CONE = 120 * Math.PI/180;  // 120° vision cone in front of zombie
-var ZOMBIE_BASE_SPD = 0.5;     // wander speed multiplier (relative to P.spd)
-var ZOMBIE_CHASE_SPD = 0.8;    // chase speed (0.8 of player)
-var ZOMBIE_FLEE_SPD = 1.0;     // flee speed in power mode (matches player)
-var ZOMBIE_TOUCH_RADIUS = 70;  // touch distance for game-over (slightly generous)
-var ZOMBIES = [];
-
-function rand(a,b){ return a + Math.random()*(b-a); }
-
-// Find a random walkable point on the map (not inside any collision box).
-// Used for spawning items and zombies at the start of each game.
-function randomWalkablePoint(){
-  for(var tries=0; tries<200; tries++){
-    var x = rand(150, WORLD.w-150);
-    var y = rand(150, WORLD.h-200);
-    if(canStand(x,y)) return {x:x, y:y};
-  }
-  // Fallback to map center area if we can't find one
-  return {x: WORLD.w*0.5, y: WORLD.h*0.4};
-}
-
-function spawnItems(){
-  ITEMS = [];
-  var ids = ['key','phone','present'];
-  ids.forEach(function(id){
-    var p = randomWalkablePoint();
-    ITEMS.push({ id:id, x:p.x, y:p.y, taken:false, bobT:Math.random()*Math.PI*2 });
-  });
-}
-
-function spawnZombies(){
-  ZOMBIES = [];
-  if(!ZOMBIES_ENABLED) return;   // dev toggle — set to false for collision tuning
-  var charKeys = Object.keys(ZOMBIE_CHARACTERS);
-  charKeys.forEach(function(charKey){
-    var p, dx, dy, tries=0;
-    do {
-      p = randomWalkablePoint();
-      dx = p.x-P.x; dy = p.y-P.y;
-      tries++;
-    } while(Math.sqrt(dx*dx+dy*dy) < 500 && tries<50);
-    var initialDir = Math.random()*Math.PI*2;
-    ZOMBIES.push({
-      char: charKey,
-      x: p.x, y: p.y,
-      dir: initialDir,                  // current heading (radians)
-      facing: dirToFacing(initialDir),  // 'down'|'up'|'right'|'left' for sprite
-      dirT: 0,
-      state: 'wander',                  // 'wander' | 'chase' | 'flee'
-    });
-  });
-}
-
-// Convert a movement angle to the closest 4-way facing for sprite display
-function dirToFacing(angle){
-  // angle 0 = +X (right), PI/2 = +Y (down). Normalize and bucket.
-  var a = ((angle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
-  if(a < Math.PI*0.25 || a >= Math.PI*1.75) return 'right';
-  if(a < Math.PI*0.75) return 'down';
-  if(a < Math.PI*1.25) return 'left';
-  return 'up';
-}
-
-function resetInventory(){
-  INV.key=false; INV.phone=false; INV.present=false;
-  updateInventoryHUD();
-}
-
-function updateInventoryHUD(){
-  ['key','phone','present'].forEach(function(id){
-    var el = document.getElementById('inv-'+id);
-    if(!el) return;
-    if(INV[id]){
-      el.classList.add('filled');
-      el.textContent = ITEM_EMOJI[id];
-    } else {
-      el.classList.remove('filled');
-      el.textContent = '';
-    }
-  });
-}
-
-function startGame(){
-  // "Start Game" button click → hide menu, kill music, play cutscene.
-  // When cutscene ends, beginGameplay() runs.
-  STATE = 'cutscene';
-  document.getElementById('menu-screen').classList.add('hidden');
-  // Hard-stop menu music (not fade — cutscene has its own audio)
-  if(menuMusic){ menuMusic.pause(); menuMusic.currentTime = 0; }
-  if(musicFadeT){ clearInterval(musicFadeT); musicFadeT = null; }
-  // Show and play the cutscene
-  var screen = document.getElementById('cutscene-screen');
-  var video  = document.getElementById('cutscene-video');
-  screen.classList.add('show');
-  video.currentTime = 0;
-  // Wire up the end handler once
-  if(!video._wired){
-    video.addEventListener('ended', beginGameplay);
-    // Safety net: if the video errors or stalls, start gameplay after 9s
-    setTimeout(function(){ if(STATE==='cutscene') beginGameplay(); }, 9000);
-    video._wired = true;
-  }
-  var p = video.play();
-  if(p && p.catch){ p.catch(function(){ /* shouldn't happen — Start click counts as user gesture */ beginGameplay(); }); }
-}
-
-function beginGameplay(){
-  if(STATE === 'playing') return;  // guard against double-fire
-  STATE = 'playing';
-  document.getElementById('cutscene-screen').classList.remove('show');
-  document.getElementById('inv-hud').classList.add('show');
-  // Reset world state
-  placePlayer();
-  resetInventory();
-  POWER_MODE = false;
-  document.getElementById('power-banner').classList.remove('show');
-  spawnItems();
-  spawnZombies();
-  startGameplayMusic();
-}
-
-function activatePowerMode(){
-  POWER_MODE = true;
-  powerEnds = performance.now() + POWER_MS;
-  document.getElementById('power-banner').classList.add('show');
-  // Flip all zombies to flee state immediately
-  ZOMBIES.forEach(function(z){ z.state='flee'; });
-}
-
-function endPowerMode(){
-  POWER_MODE = false;
-  document.getElementById('power-banner').classList.remove('show');
-  // Zombies return to wander; they'll re-detect player if in range
-  ZOMBIES.forEach(function(z){ z.state='wander'; });
-}
-
-// ── ITEMS: pickup, draw with bobbing float + shadow ──────────────
-function updateItems(){
-  for(var i=0; i<ITEMS.length; i++){
-    var it = ITEMS[i];
-    if(it.taken) continue;
-    it.bobT += 0.06;
-    // Pickup if player walks over
-    var dx = P.x-it.x, dy = P.y-it.y;
-    if(Math.sqrt(dx*dx+dy*dy) < 60){
-      it.taken = true;
-      INV[it.id] = true;
-      updateInventoryHUD();
-      // Check if all 3 collected -> power mode
-      if(INV.key && INV.phone && INV.present){
-        setTimeout(activatePowerMode, 150);
-      }
-    }
-  }
-}
-
-function drawItems(){
-  for(var i=0; i<ITEMS.length; i++){
-    var it = ITEMS[i];
-    if(it.taken) continue;
-    var bob = Math.sin(it.bobT) * 12;            // world-px bob amount
-    var screenX = w2sX(it.x), screenY = w2sY(it.y);
-    // Shadow: expands as item rises (counter-intuitive — shadow grows when high
-    // makes it look weird; the convention is shadow SHRINKS when item is high).
-    // We'll shrink shadow as bob goes UP (negative).
-    var shadowScale = 1 + (bob/22);  // when bob=-12 shadow=0.45, when bob=+12 shadow=1.55
-    if(shadowScale<0.4) shadowScale=0.4;
-    var shW = 40*ZOOM*shadowScale, shH = shW*0.32;
-    ctx.fillStyle='rgba(0,0,0,0.25)';
-    ctx.beginPath();
-    ctx.ellipse(screenX, screenY, shW/2, shH/2, 0, 0, Math.PI*2);
-    ctx.fill();
-    // Item floats above the shadow
-    var drawY = screenY + bob*ZOOM;
-    var size = 56 * ZOOM;
-    if(itemsSheet.complete && itemsSheet.naturalWidth){
-      // Slice the cell for this item from the sheet (5 columns).
-      // The items occupy a vertical band roughly 35%-68% of the image height,
-      // with empty space above and below — so we crop to that band to avoid squish.
-      var cellW = itemsSheet.naturalWidth / ITEMS_SHEET_COLS;
-      var sheetH = itemsSheet.naturalHeight;
-      var srcY = sheetH * 0.34;
-      var srcH = sheetH * 0.34;
-      var col   = ITEM_CELL[it.id];
-      // Draw as a square, preserving the actual item aspect (roughly 1:1)
-      ctx.drawImage(itemsSheet, col*cellW, srcY, cellW, srcH,
-                    screenX-size/2, drawY-size, size, size);
-    } else {
-      // Placeholder: colored circle with emoji while the sheet loads
-      ctx.fillStyle = ITEM_COLORS[it.id];
-      ctx.beginPath();
-      ctx.arc(screenX, drawY-size/2, size/2, 0, Math.PI*2);
-      ctx.fill();
-      ctx.strokeStyle='#fff'; ctx.lineWidth=2;
-      ctx.stroke();
-      ctx.font = (size*0.55)+'px serif';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillStyle='#fff';
-      ctx.fillText(ITEM_EMOJI[it.id], screenX, drawY-size/2);
-    }
-  }
-}
-
-// ── ZOMBIES: wander, chase, flee with directional vision ─────────
-// Returns true if the player is within the zombie's vision cone in front of it.
-// Vision = within radius AND within VISION_CONE angle of zombie's current facing.
-function playerInZombieVision(z, dist){
-  if(dist > ZOMBIE_DETECT) return false;
-  if(dist < 30) return true;  // touching counts as seen (avoid divide issues)
-  // angle from zombie to player
-  var ang = Math.atan2(P.y - z.y, P.x - z.x);
-  // zombie's facing direction as an angle
-  var facingAng = { right:0, down:Math.PI/2, left:Math.PI, up:-Math.PI/2 }[z.facing];
-  // smallest angle difference
-  var diff = Math.abs(((ang - facingAng + Math.PI) % (Math.PI*2)) - Math.PI);
-  return diff <= ZOMBIE_VISION_CONE/2;
-}
-
-function updateZombies(){
-  // End power mode when timer runs out
-  if(POWER_MODE){
-    var remaining = (powerEnds - performance.now())/1000;
-    if(remaining<=0){ endPowerMode(); }
-    else { document.getElementById('pb-secs').textContent = Math.ceil(remaining); }
-  }
-
-  for(var i=0; i<ZOMBIES.length; i++){
-    var z = ZOMBIES[i];
-    var dx = P.x - z.x, dy = P.y - z.y;
-    var dist = Math.sqrt(dx*dx + dy*dy);
-
-    // ── State transitions ──
-    if(POWER_MODE){
-      z.state = 'flee';
-    } else {
-      // Stay in chase if already chasing AND still within larger radius (hysteresis)
-      // Otherwise: enter chase only via vision cone detection
-      if(z.state==='chase'){
-        if(dist > ZOMBIE_DETECT*1.4) z.state='wander';
-      } else if(z.state==='flee'){
-        z.state='wander';   // power mode ended
-      } else {
-        // wandering: check vision cone
-        if(playerInZombieVision(z, dist)) z.state='chase';
-      }
-    }
-
-    // ── Movement based on state ──
-    var spd = P.spd * ZOMBIE_BASE_SPD;
-    var moveX = 0, moveY = 0;
-    if(z.state==='chase'){
-      spd = P.spd * ZOMBIE_CHASE_SPD;
-      if(dist>0){ moveX = (dx/dist)*spd; moveY = (dy/dist)*spd; }
-      // face the player while chasing
-      z.facing = dirToFacing(Math.atan2(dy,dx));
-    } else if(z.state==='flee'){
-      spd = P.spd * ZOMBIE_FLEE_SPD;
-      if(dist>0){ moveX = -(dx/dist)*spd; moveY = -(dy/dist)*spd; }
-      // face away from player while fleeing
-      z.facing = dirToFacing(Math.atan2(-dy,-dx));
-    } else {
-      // wander: pick new heading periodically; update facing each time
-      z.dirT--;
-      if(z.dirT<=0){
-        z.dir = Math.random()*Math.PI*2;
-        z.dirT = 80 + Math.random()*140;
-        z.facing = dirToFacing(z.dir);
-      }
-      moveX = Math.cos(z.dir)*spd; moveY = Math.sin(z.dir)*spd;
-    }
-
-    // ── Apply move with collision ──
-    var ZFB_W=50, ZFB_H=30;
-    var tryX = z.x + moveX;
-    var fbX = {x:tryX-ZFB_W/2, y:z.y-ZFB_H/2, w:ZFB_W, h:ZFB_H};
-    var blocked=false;
-    for(var c=0;c<COLLISIONS.length;c++){ if(rectOverlap(fbX,COLLISIONS[c])){ blocked=true; break; } }
-    if(!blocked && tryX>=50 && tryX<=WORLD.w-50) z.x = tryX;
-    else if(z.state==='wander'){ z.dir = Math.random()*Math.PI*2; z.facing = dirToFacing(z.dir); }
-
-    var tryY = z.y + moveY;
-    var fbY = {x:z.x-ZFB_W/2, y:tryY-ZFB_H/2, w:ZFB_W, h:ZFB_H};
-    blocked=false;
-    for(var c=0;c<COLLISIONS.length;c++){ if(rectOverlap(fbY,COLLISIONS[c])){ blocked=true; break; } }
-    if(!blocked && tryY>=50 && tryY<=WORLD.h-50) z.y = tryY;
-    else if(z.state==='wander'){ z.dir = Math.random()*Math.PI*2; z.facing = dirToFacing(z.dir); }
-
-    // ── TOUCH DETECTION: game over if zombie touches player ──
-    // Skip touch if in power mode (zombies are fleeing, can't catch you)
-    if(!POWER_MODE && STATE==='playing' && dist < ZOMBIE_TOUCH_RADIUS){
-      triggerGameOver(z);
-      return;
-    }
-  }
-}
-
-function drawZombies(){
-  for(var i=0; i<ZOMBIES.length; i++){
-    var z = ZOMBIES[i];
-    var x = w2sX(z.x), y = w2sY(z.y);
-    // Zombie sprite size in world units
-    var spriteH = 150, spriteW = spriteH*0.78;  // similar proportions to Sarah
-    var sw = spriteW*ZOOM, sh = spriteH*ZOOM;
-
-    // shadow on the ground (anchored at z.y, the zombie's feet)
-    var shW = sw*0.55, shH = shW*0.35;
-    ctx.fillStyle='rgba(0,0,0,0.22)';
-    ctx.beginPath();
-    ctx.ellipse(x, y, shW/2, shH/2, 0, 0, Math.PI*2); ctx.fill();
-
-    // sprite
-    var img = zombieImgs[z.char];
-    var dx = x - sw/2, dy = y - sh;
-    if(img && img.complete && img.naturalWidth){
-      var cellW = img.naturalWidth / 2;
-      var cellH = img.naturalHeight / 2;
-      var cell = ZOMBIE_CELL[z.facing] || ZOMBIE_CELL.down;
-      ctx.drawImage(img, cell.c*cellW, cell.r*cellH, cellW, cellH, dx, dy, sw, sh);
-    } else {
-      // Fallback to colored dot while sprite loads
-      var color = z.state==='chase' ? '#CC2200' : (z.state==='flee' ? '#7CFC9A' : '#29ABE2');
-      ctx.fillStyle = color;
-      ctx.beginPath(); ctx.arc(x, y - sh*0.35, sh*0.18, 0, Math.PI*2); ctx.fill();
-    }
-
-    // chase indicator (small ! above their head)
-    if(z.state==='chase'){
-      ctx.fillStyle='#CC2200';
-      ctx.strokeStyle='#fff'; ctx.lineWidth=3;
-      ctx.font='bold '+Math.round(24*ZOOM)+'px Bebas Neue, sans-serif';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.strokeText('!', x, dy - 8);
-      ctx.fillText('!', x, dy - 8);
-    }
-  }
-}
-
-// ── GAME OVER ────────────────────────────────────────────────────
-function triggerGameOver(byZombie){
-  if(STATE!=='playing') return;
-  STATE = 'lost';
-  document.getElementById('inv-hud').classList.remove('show');
-  document.getElementById('power-banner').classList.remove('show');
-  // Count items collected for the resign screen
-  var collected = (INV.key?1:0) + (INV.phone?1:0) + (INV.present?1:0);
-  document.getElementById('resign-items').textContent = collected;
-  var byName = ZOMBIE_CHARACTERS[byZombie.char].name;
-  document.getElementById('resign-by').textContent = byName;
-  document.getElementById('resign-screen').classList.add('show');
-  stopGameplayMusic();
-}
-function returnToMenu(){
-  STATE = 'menu';
-  document.getElementById('resign-screen').classList.remove('show');
-  document.getElementById('menu-screen').classList.remove('hidden');
-  fadeInMenuMusic();
-}
-
-var loop=function(){
-  requestAnimationFrame(loop);
-  P.spd = parseFloat(document.getElementById('speed').value);
-  ZOOM = parseFloat(document.getElementById('zoom').value);
-
-  // movement (normalized; keyboard or joystick) — only when playing
-  var ix=0, iy=0;
-  if(STATE==='playing' && !EDIT){
-    if(JOY.active){ ix=JOY.vx; iy=JOY.vy; }
-    else {
-      if(K.up)iy-=1; if(K.down)iy+=1; if(K.left)ix-=1; if(K.right)ix+=1;
-    }
-  }
-  // Update 4-way facing: prefer horizontal direction if both axes are pressed
-  // (matches the side-walking animation which is the most visually polished).
-  if(Math.abs(ix) > Math.abs(iy)){
-    if(ix > 0.05) P.facing = 'right';
-    else if(ix < -0.05) P.facing = 'left';
-  } else {
-    if(iy > 0.05) P.facing = 'down';
-    else if(iy < -0.05) P.facing = 'up';
-  }
-
-  var mag=Math.sqrt(ix*ix+iy*iy);
-  if(mag>0.12){
-    var vx=(ix/mag)*P.spd, vy=(iy/mag)*P.spd;
-    var tryX = Math.max(0,Math.min(WORLD.w, P.x+vx));
-    if(canStand(tryX, P.y)) P.x = tryX;
-    var tryY = Math.max(0,Math.min(WORLD.h, P.y+vy));
-    if(canStand(P.x, tryY)) P.y = tryY;
-    P.moving=true;
-    P.frT++; if(P.frT>FRAME_TICK){ P.fr=(P.fr+1)%WALK_LEN; P.frT=0; }
-  } else { P.moving=false; P.fr=0; }
-
-  // Update game systems
-  if(STATE==='playing' && !EDIT){
-    updateItems();
-    updateZombies();
-  }
-
-  updateCamera();
-  drawWorld();
-  drawCollisions();
-  if(STATE==='playing' || STATE==='lost'){
-    drawItems();
-    drawZombies();
-  }
-  drawPlayer();
-
-  document.getElementById('cx').textContent=Math.round(P.x);
-  document.getElementById('cy').textContent=Math.round(P.y);
-  document.getElementById('hud-pos').textContent=Math.round(P.x)+','+Math.round(P.y);
-};
-
-// ── INPUT ───────────────────────────────────────────────────────────
-document.addEventListener('keydown',function(e){
-  if(e.key==='ArrowUp'||e.key==='w'||e.key==='W')K.up=true;
-  if(e.key==='ArrowDown'||e.key==='s'||e.key==='S')K.down=true;
-  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')K.left=true;
-  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')K.right=true;
-  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))e.preventDefault();
-});
-document.addEventListener('keyup',function(e){
-  if(e.key==='ArrowUp'||e.key==='w'||e.key==='W')K.up=false;
-  if(e.key==='ArrowDown'||e.key==='s'||e.key==='S')K.down=false;
-  if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')K.left=false;
-  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')K.right=false;
-});
-
-var joyBase, joyStick, JOY_R=55;
-function relPos(t){ var r=canvas.getBoundingClientRect(); return {x:t.clientX-r.left, y:t.clientY-r.top}; }
-function joyStart(e){ if(EDIT) return; if(JOY.active)return; var t=e.changedTouches[0]; JOY.id=t.identifier; JOY.active=true;
-  var p=relPos(t); JOY.bx=p.x; JOY.by=p.y; JOY.vx=0; JOY.vy=0;
-  var cr=canvas.getBoundingClientRect(), hr=document.getElementById('s-game').getBoundingClientRect();
-  joyBase.style.left=(cr.left-hr.left+p.x)+'px'; joyBase.style.top=(cr.top-hr.top+p.y)+'px';
-  joyStick.style.left='50%'; joyStick.style.top='50%'; joyBase.classList.add('show'); e.preventDefault();
-}
-function joyMove(e){ if(!JOY.active)return;
-  for(var i=0;i<e.changedTouches.length;i++){ var t=e.changedTouches[i]; if(t.identifier!==JOY.id)continue;
-    var p=relPos(t), dx=p.x-JOY.bx, dy=p.y-JOY.by, dist=Math.sqrt(dx*dx+dy*dy), cl=Math.min(dist,JOY_R), ang=Math.atan2(dy,dx);
-    var sx=Math.cos(ang)*cl, sy=Math.sin(ang)*cl;
-    joyStick.style.left=(50+sx/120*100)+'%'; joyStick.style.top=(50+sy/120*100)+'%';
-    JOY.vx=sx/JOY_R; JOY.vy=sy/JOY_R; e.preventDefault();
-  }
-}
-function joyEnd(e){ for(var i=0;i<e.changedTouches.length;i++){ if(e.changedTouches[i].identifier===JOY.id){ JOY.active=false; JOY.vx=0; JOY.vy=0; JOY.id=null; joyBase.classList.remove('show'); } } }
-
-var rzT=null;
-window.addEventListener('resize',function(){ clearTimeout(rzT); rzT=setTimeout(sizeCanvas,150); });
-
-window.addEventListener('load',function(){
-  canvas=document.getElementById('game-canvas');
-  joyBase=document.getElementById('joy-base'); joyStick=document.getElementById('joy-stick');
-  sizeCanvas();
-  canvas.addEventListener('touchstart',joyStart,{passive:false});
-  canvas.addEventListener('touchmove',joyMove,{passive:false});
-  canvas.addEventListener('touchend',joyEnd);
-  canvas.addEventListener('touchcancel',joyEnd);
-  // editor: mouse (desktop) + touch (mobile). They bail if !EDIT.
-  canvas.addEventListener('mousedown', editStart);
-  window.addEventListener('mousemove', editMove);
-  window.addEventListener('mouseup',   editEnd);
-  canvas.addEventListener('touchstart', editStart, {passive:false});
-  canvas.addEventListener('touchmove',  editMove,  {passive:false});
-  canvas.addEventListener('touchend',   editEnd);
-  loadCollisions();
-  loadFoot();
-  loadMap();
-  placePlayer();
-  tryPlayMenuMusic();
-  requestAnimationFrame(loop);
-});
+#s-game { padding: 0; width: 100%; position: relative; }
+.game-hud { display: flex; justify-content: space-between; align-items: center; padding: 7px 14px; background: rgba(0,0,0,0.85); border-bottom: 1px solid rgba(255,255,255,0.06); }
+.hud-s { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.hud-l { font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); text-transform: uppercase; }
+.hud-v { font-family: 'Bebas Neue', sans-serif; font-size: 16px; line-height: 1; color:#F5A623; }
+#game-canvas { display: block; width: 100%; height: 560px; background: #cfd4da; }
+
+.dbg-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:8px 12px; background:#0d0d0d; border-top:1px solid rgba(255,255,255,0.06); font-family:'IBM Plex Mono',monospace; font-size:10px; }
+.dbg-coord { color:#29ABE2; } .dbg-coord b { color:#fff; }
+.dbg-bar label { color:rgba(255,255,255,0.55); display:flex; align-items:center; gap:6px; }
+.dbg-bar input[type=range]{ width:120px; }
+.dbg-btn { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); color:#fff; padding:5px 10px; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; cursor:pointer; border-radius:4px; }
+.dbg-btn.on { background:#CC2200; border-color:#CC2200; }
+.dbg-edit-bar { display:none; flex-wrap:wrap; gap:6px; align-items:center; padding:8px 12px; background:#1a0d0a; border-top:1px solid rgba(204,34,0,0.3); }
+.dbg-edit-bar.show { display:flex; }
+.edit-hint { font-family:'IBM Plex Mono',monospace; font-size:9px; color:rgba(255,255,255,0.5); flex:1; }
+#export-pane { display:none; padding:10px 12px; background:#0a0a0a; border-top:1px solid rgba(255,255,255,0.08); }
+#export-pane.show { display:block; }
+#export-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#29ABE2; }
+#export-head button { background:none; border:none; color:rgba(255,255,255,0.5); cursor:pointer; font-size:14px; }
+#export-text { width:100%; height:140px; background:#000; color:#7CFC9A; border:1px solid rgba(255,255,255,0.12); border-radius:6px; padding:8px; font-family:'IBM Plex Mono',monospace; font-size:10px; line-height:1.5; resize:vertical; }
+
+/* Drag joystick */
+#joy-base { position:absolute; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.10); border:1.5px solid rgba(255,255,255,0.25); display:none; z-index:30; pointer-events:none; transform:translate(-50%,-50%); }
+#joy-stick { position:absolute; top:50%; left:50%; width:52px; height:52px; border-radius:50%; background:rgba(41,171,226,0.6); border:1.5px solid rgba(41,171,226,0.95); transform:translate(-50%,-50%); }
+#joy-base.show { display:block; }
+
+/* Start menu overlay */
+#menu-screen { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(45,45,45,0.95); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; z-index:60; padding:24px; }
+#menu-screen.hidden { display:none; }
+
+/* Opening cutscene */
+#cutscene-screen { position:absolute; top:0; left:0; right:0; bottom:0; background:#000; display:none; align-items:center; justify-content:center; z-index:65; }
+#cutscene-screen.show { display:flex; }
+#cutscene-video { width:100%; height:100%; object-fit:contain; background:#000; }
+
+/* Mute button (top-left, menu only) */
+#mute-btn { position:absolute; top:28px; left:28px; display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.10); border:1.5px solid rgba(255,255,255,0.25); color:#fff; padding:8px 14px 8px 10px; border-radius:24px; cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; transition:background 0.15s, border-color 0.15s; }
+#mute-btn:hover { background:rgba(255,255,255,0.16); border-color:rgba(255,255,255,0.45); }
+#mute-btn .mute-hint { color:rgba(255,255,255,0.75); }
+#mute-btn.unmuted .mute-hint { display:none; }
+#mute-btn:not(.unmuted) { animation:mutePulse 1.8s ease-in-out infinite; }
+@keyframes mutePulse { 0%,100%{box-shadow:0 0 0 0 rgba(41,171,226,0);} 50%{box-shadow:0 0 0 8px rgba(41,171,226,0.18);} }
+.menu-inner { text-align:center; max-width:420px; }
+.menu-eyebrow { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(255,255,255,0.35); text-transform:uppercase; margin-bottom:14px; }
+.menu-title { font-family:'Bebas Neue',sans-serif; font-size:88px; line-height:0.95; color:#fff; margin-bottom:10px; letter-spacing:0.01em; }
+.menu-title span { color:#29ABE2; }
+.menu-sub { font-size:14px; color:rgba(255,255,255,0.6); margin-bottom:24px; line-height:1.5; }
+.menu-play { background:#29ABE2; color:#1A2B4A; border:none; padding:16px 44px; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; border-radius:6px; box-shadow:0 8px 24px rgba(41,171,226,0.4); transition:transform 0.15s, box-shadow 0.15s; }
+.menu-play:hover { transform:translateY(-2px); box-shadow:0 12px 28px rgba(41,171,226,0.55); }
+.menu-howto { margin-top:22px; font-family:'IBM Plex Mono',monospace; font-size:10px; line-height:1.8; color:rgba(255,255,255,0.4); letter-spacing:0.05em; }
+
+/* Inventory HUD (bottom-right) */
+#inv-hud { position:absolute; right:14px; bottom:14px; z-index:25; display:none; pointer-events:none; }
+#inv-hud.show { display:block; }
+
+/* Objective banner — slides in on game start, auto-hides after 7s */
+#obj-banner { position:absolute; left:50%; top:80px; transform:translateX(-50%); max-width:480px; padding:12px 22px; background:rgba(26,43,74,0.95); color:#fff; border:1.5px solid rgba(41,171,226,0.45); border-radius:10px; font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.5; text-align:center; box-shadow:0 8px 28px rgba(0,0,0,0.35); z-index:30; display:none; pointer-events:none; }
+#obj-banner.show { display:block; animation:objSlideIn 0.5s ease-out, objFade 1s ease-in 6s forwards; }
+@keyframes objSlideIn { from{opacity:0; transform:translate(-50%,-12px);} to{opacity:1; transform:translate(-50%,0);} }
+@keyframes objFade { to{opacity:0;} }
+
+/* Persistent item counter (bottom-left) */
+#item-counter { position:absolute; left:14px; bottom:14px; z-index:25; display:none; padding:8px 14px; background:rgba(26,43,74,0.85); border:1.5px solid rgba(41,171,226,0.35); border-radius:8px; font-family:'IBM Plex Mono',monospace; pointer-events:none; }
+#item-counter.show { display:flex; align-items:center; gap:10px; }
+#item-counter .ic-label { font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.55); }
+#item-counter .ic-val { font-size:18px; color:#F5A623; font-weight:700; }
+#item-counter .ic-val #ic-cur { color:#7CFC9A; }
+.inv-label { font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:0.2em; color:rgba(255,255,255,0.55); text-transform:uppercase; text-align:right; margin-bottom:5px; text-shadow:0 1px 3px rgba(0,0,0,0.8); }
+.inv-slots { display:flex; gap:7px; }
+.inv-slot { width:44px; height:44px; border-radius:10px; background:rgba(0,0,0,0.55); border:1.5px solid rgba(255,255,255,0.18); display:flex; align-items:center; justify-content:center; font-size:22px; backdrop-filter:blur(4px); }
+.inv-slot.filled { background:rgba(41,171,226,0.85); border-color:#fff; box-shadow:0 4px 12px rgba(41,171,226,0.5); animation:pop 0.4s; }
+@keyframes pop { 0%{transform:scale(0.4);} 60%{transform:scale(1.2);} 100%{transform:scale(1);} }
+
+/* Resign / game-over screen */
+#resign-screen { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(20,15,15,0.92); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); display:none; align-items:center; justify-content:center; z-index:70; padding:24px; }
+#resign-screen.show { display:flex; animation:resignFade 0.4s ease-out; }
+@keyframes resignFade { from{opacity:0;} to{opacity:1;} }
+.resign-inner { text-align:center; max-width:440px; }
+.resign-eyebrow { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.3em; color:rgba(255,255,255,0.3); text-transform:uppercase; margin-bottom:18px; }
+.resign-stamp { font-family:'Bebas Neue',sans-serif; font-size:42px; line-height:1; color:#fff; margin-bottom:10px; letter-spacing:0.02em; padding:18px 20px; border:3px solid #CC2200; transform:rotate(-3deg); display:inline-block; background:rgba(204,34,0,0.08); }
+.resign-stamp span { color:#CC2200; font-size:54px; display:block; margin-top:6px; }
+.resign-body { font-size:15px; color:rgba(255,255,255,0.7); margin:28px 0 24px; line-height:1.6; }
+.resign-body span { color:#F5A623; font-weight:600; }
+.resign-btn { background:transparent; color:#fff; border:2px solid rgba(255,255,255,0.4); padding:14px 36px; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; cursor:pointer; border-radius:6px; transition:all 0.15s; }
+.resign-btn:hover { border-color:#fff; background:rgba(255,255,255,0.08); }
+#power-banner { position:absolute; top:55px; left:50%; transform:translateX(-50%); z-index:26; display:none; align-items:center; gap:10px; padding:8px 18px; background:linear-gradient(90deg,#CC2200,#F5A623); border-radius:20px; box-shadow:0 6px 20px rgba(204,34,0,0.5); }
+#power-banner.show { display:flex; animation:powerPulse 0.5s ease-out; }
+@keyframes powerPulse { 0%{transform:translateX(-50%) scale(0.6);opacity:0;} 100%{transform:translateX(-50%) scale(1);opacity:1;} }
+.pb-label { font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; letter-spacing:0.2em; color:#fff; text-transform:uppercase; }
+.pb-time { font-family:'Bebas Neue',sans-serif; font-size:22px; color:#fff; line-height:1; }
+</style>
+</head>
+<body>
+<div class="ct-card">
+<div id="s-game">
+  <div class="game-hud">
+    <div class="hud-s"><div class="hud-l">Mode</div><div class="hud-v">MAP TEST</div></div>
+    <div class="hud-s"><div class="hud-l">Sarah</div><div class="hud-v" id="hud-pos">—</div></div>
+    <div class="hud-s"><div class="hud-l">Camera</div><div class="hud-v">FOLLOW</div></div>
+  </div>
+  <canvas id="game-canvas"></canvas>
+  <div id="joy-base"><div id="joy-stick"></div></div>
+
+  <!-- START MENU OVERLAY -->
+  <div id="menu-screen">
+    <button id="mute-btn" onclick="toggleMute(event)" aria-label="Toggle music">
+      <svg id="mute-icon-on" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+      </svg>
+      <svg id="mute-icon-off" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <line x1="23" y1="9" x2="17" y2="15"/>
+        <line x1="17" y1="9" x2="23" y2="15"/>
+      </svg>
+      <span class="mute-hint">tap to unmute</span>
+    </button>
+    <div class="menu-inner">
+      <div class="menu-eyebrow">Clean Towers · Phoenix AZ</div>
+      <div class="menu-title">Property <span>Walk</span></div>
+      <div class="menu-sub">Avoid the nagging tenants, collect all 5 power items and keep the building running smooth.</div>
+      <button class="menu-play" onclick="startGame()">Start Game →</button>
+      <div class="menu-howto">
+        Move: arrow keys (desktop) · drag joystick (mobile)<br>
+        Collect: walk over items · activate power: collect all 3
+      </div>
+    </div>
+  </div>
+
+  <!-- OPENING CUTSCENE -->
+  <div id="cutscene-screen">
+    <video id="cutscene-video" playsinline preload="auto">
+      <source src="https://cdn.jsdelivr.net/gh/iamajharris-sys/propertywalk@main/Cutscene%201.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <!-- RESIGN / GAME OVER SCREEN -->
+  <div id="resign-screen">
+    <div class="resign-inner">
+      <div class="resign-eyebrow">Clean Towers · HR Department</div>
+      <div class="resign-stamp">YOU HAVE BEEN<br><span>ASKED TO RESIGN</span></div>
+      <div class="resign-body">
+        <span id="resign-by">A tenant</span> caught up to you.<br>
+        You collected <span id="resign-items">0</span>/3 items before being cornered.
+      </div>
+      <button class="resign-btn" onclick="returnToMenu()">Back to Menu</button>
+    </div>
+  </div>
+
+  <!-- IN-GAME HUD OVERLAYS -->
+  <div id="obj-banner">
+    <span id="obj-text">This is your property! Collect all 5 power items and head to the roof before the nagging tenants corner you.</span>
+  </div>
+  <div id="item-counter">
+    <span class="ic-label">Items</span>
+    <span class="ic-val"><span id="ic-cur">0</span>/<span id="ic-max">3</span></span>
+  </div>
+  <div id="inv-hud">
+    <div class="inv-label">Inventory</div>
+    <div class="inv-slots">
+      <div class="inv-slot" id="inv-key"></div>
+      <div class="inv-slot" id="inv-phone"></div>
+      <div class="inv-slot" id="inv-present"></div>
+    </div>
+  </div>
+  <div id="power-banner">
+    <div class="pb-label">POWER MODE</div>
+    <div class="pb-time"><span id="pb-secs">15</span>s</div>
+  </div>
+  <div class="dbg-bar">
+    <span class="dbg-coord">world x:<b id="cx">0</b> y:<b id="cy">0</b></span>
+    <label>zoom <input type="range" id="zoom" min="0.3" max="4" step="0.1" value="1.1"></label>
+    <label>speed <input type="range" id="speed" min="2" max="12" step="0.5" value="5"></label>
+    <button class="dbg-btn" id="btn-coll" onclick="toggleColl()">Collision: ON</button>
+    <span class="dbg-coord" id="mapstatus" style="color:#F5A623;">loading map…</span>
+    <div style="flex-basis:100%; height:0;"></div>
+    <button class="dbg-btn" id="btn-edit" onclick="toggleEdit()">✎ Edit: OFF</button>
+  </div>
+  <div class="dbg-edit-bar" id="edit-bar">
+    <span class="edit-hint">drag to move · drag corners to resize · click empty to deselect</span>
+    <span id="save-status" style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#7CFC9A;letter-spacing:0.05em;opacity:0.5;transition:opacity 0.3s;">—</span>
+    <button class="dbg-btn" onclick="addBox()">+ Add Box</button>
+    <button class="dbg-btn" onclick="deleteSelected()">🗑 Delete</button>
+    <button class="dbg-btn" onclick="resetBoxes()">↺ Reset</button>
+    <button class="dbg-btn" onclick="exportBoxes()">⬇ Export</button>
+  </div>
+  <div id="export-pane"><div id="export-head"><span>Collision data — paste back to Claude</span><button onclick="closeExport()">✕</button></div><textarea id="export-text" readonly></textarea><button class="dbg-btn" style="width:100%;margin-top:6px;" onclick="copyExport()">Copy</button></div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/iamajharris-sys/propertywalk@main/propertywalk.js?v=1"></script>
+</body>
+</html>
