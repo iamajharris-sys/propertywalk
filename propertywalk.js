@@ -561,6 +561,10 @@ var powerEnds = 0;             // performance.now() ms when power expires
 // Zombies
 // Each zombie character has a 2x2 sprite sheet: down/up/right/left.
 // (Same layout as Sarah v1 / Grumpy / Karen.)
+// ── DEV TOGGLE: flip to true to enable zombies, false to remove them
+//    (useful when tuning collision so they don't chase you)
+var ZOMBIES_ENABLED = false;
+
 var ZOMBIE_CHARACTERS = {
   grumpy:     { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a7444c5deaf6ef798a00_Grumpy_man.png',      name:'Grumpy' },
   karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen' },
@@ -614,6 +618,7 @@ function spawnItems(){
 
 function spawnZombies(){
   ZOMBIES = [];
+  if(!ZOMBIES_ENABLED) return;   // dev toggle — set to false for collision tuning
   var charKeys = Object.keys(ZOMBIE_CHARACTERS);
   charKeys.forEach(function(charKey){
     var p, dx, dy, tries=0;
