@@ -2,7 +2,7 @@
 // Paste your Webflow map URL here. The game loads it as the world.
 // Until a real map is set, a placeholder grid world is used so you can
 // still see the camera-follow + walking working.
-var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18f2af3d9fd9884589a1d2_New%20Map%20V2.png';
+var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18fb36eaf2c95302ebeb26_Map%20V3.png';
 
 // ── SPRITE SHEET (Sarah v2, 4x4 grid of 512px cells) ──
 var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17d903241ea06a10d3a411_Sarah%20v3.png';
