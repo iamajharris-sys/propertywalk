@@ -9,7 +9,7 @@ var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18f
 //          row 1 = facing LEFT (4-frame walk)
 //          row 2 = facing RIGHT (4-frame walk)
 //          row 3 = facing UP (4 frames)
-var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1919e451d287b8843ba526_sarah_v4_sprite_transparent.png';
+var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a191e98eeccb22ae314a538_sarah_v5_sprite_clean.png';
 var CELL = 512;
 // Which row of the sprite sheet to use for each facing direction.
 var FACING_ROW = { down:0, left:1, right:2, up:3 };
