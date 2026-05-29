@@ -6,17 +6,18 @@ var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18f
 
 // ── SPRITE SHEET (Sarah v7 hybrid, 4x4 grid of 512px cells) ──
 // Layout:  row 0 = facing DOWN (4 frames, mostly static)
-//          row 1 = facing LEFT  (4-frame walk cycle — nice shuffle)
-//          row 2 = facing RIGHT (4-frame walk cycle)
+//          row 1 = SIDE WALK (4-frame walk cycle, nice shuffle, badge removed)
+//                  → used for LEFT as-is, mirrored horizontally for RIGHT
+//          row 2 = (kept for reference, unused now)
 //          row 3 = facing UP    (4 frames, static back view)
-var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a19f496591fd8eff2dadc78_sarah_v7_final.png';
+var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1a0f517967a995acb77867_sarah_v7_final.png';
 var CELL = 512;
-// Map facing direction to {row, mirror}. No mirroring needed — each row
-// already faces the correct way.
+// Map facing direction to {row, mirror}. LEFT uses row 1 unmirrored.
+// RIGHT uses the same row 1 mirrored — guarantees identical shuffle both ways.
 var FACING_FRAME = {
   down:  { row:0, mirror:false },
   left:  { row:1, mirror:false },
-  right: { row:2, mirror:false },
+  right: { row:1, mirror:true  },
   up:    { row:3, mirror:false },
 };
 // Number of frames per walk cycle (4 in our new sheet).
