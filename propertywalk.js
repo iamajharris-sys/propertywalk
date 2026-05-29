@@ -19,10 +19,10 @@ var CELL = 512;
 // Negative dx = move LEFT, positive dx = move RIGHT.
 // Negative dy = move UP, positive dy = move DOWN.
 var FACING_FRAME = {
-  down:  { row:0, mirror:false, dx:0, dy:0 },
-  left:  { row:1, mirror:false, dx:0, dy:0 },
-  right: { row:1, mirror:true,  dx:0, dy:0 },
-  up:    { row:3, mirror:false, dx:0, dy:0 },
+  down:  { row:0, mirror:false, dx:-10, dy:0 },
+  left:  { row:1, mirror:false, dx:-10, dy:0 },
+  right: { row:1, mirror:true,  dx:10,  dy:0 },
+  up:    { row:3, mirror:false, dx:-10, dy:0 },
 };
 // Number of frames per walk cycle (4 in our new sheet).
 var WALK_LEN   = 4;
