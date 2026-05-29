@@ -2,7 +2,7 @@
 // Paste your Webflow map URL here. The game loads it as the world.
 // Until a real map is set, a placeholder grid world is used so you can
 // still see the camera-follow + walking working.
-var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17d33f2da16e223f7f8bfe_Apartment_Map.png';
+var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18f2af3d9fd9884589a1d2_New%20Map%20V2.png';
 
 // ── SPRITE SHEET (Sarah v2, 4x4 grid of 512px cells) ──
 var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17d903241ea06a10d3a411_Sarah%20v3.png';
@@ -21,72 +21,89 @@ var mapImg = new Image(); var mapReady=false, mapFailed=false;
 // World dimensions (set once the map loads; placeholder until then)
 var WORLD = { w: 2048, h: 2048 };
 
-// ── COLLISION BOXES (world-pixel coords for the 2048x2048 map) ──
-// Tuned by AJ in the edit layer.
+// ── COLLISION BOXES (world-pixel coords for the 2048x2048 V2 map) ──
+// First-pass starting set for the new asymmetric map. AJ will tune in the editor.
 var COLLISION_DEFAULTS = [
-  {x:0,y:0,w:2048,h:115},
-  {x:22,y:-1,w:115,h:2048},
-  {x:1925,y:0,w:123,h:2048},
-  {x:0,y:1810,w:880,h:238},
-  {x:1170,y:1810,w:878,h:238},
-  {x:870,y:1810,w:25,h:130},
-  {x:1145,y:1810,w:25,h:130},
-  {x:734,y:-17,w:30,h:600},
-  {x:1335,y:67,w:30,h:501},
-  {x:-109,y:135,w:1815,h:178},
-  {x:726,y:818,w:241,h:152},
-  {x:1430,y:715,w:30,h:720},
-  {x:340,y:1254,w:28,h:283},
-  {x:545,y:1440,w:320,h:30},
-  {x:1138,y:1496,w:403,h:45},
-  {x:1530,y:1440,w:400,h:30},
-  {x:940,y:433,w:20,h:79},
-  {x:767,y:255,w:84,h:328},
-  {x:1286,y:254,w:125,h:280},
-  {x:563,y:233,w:160,h:218},
-  {x:166,y:489,w:153,h:87},
-  {x:510,y:523,w:36,h:149},
-  {x:286,y:192,w:38,h:157},
-  {x:1370,y:194,w:481,h:130},
-  {x:1860,y:130,w:60,h:480},
-  {x:1498,y:377,w:270,h:69},
-  {x:166,y:802,w:141,h:334},
-  {x:1196,y:923,w:200,h:248},
-  {x:1268,y:703,w:62,h:105},
-  {x:1600,y:990,w:300,h:380},
-  {x:1500,y:740,w:430,h:140},
-  {x:1490,y:900,w:110,h:470},
-  {x:122,y:686,w:633,h:155},
-  {x:512,y:156,w:38,h:200},
-  {x:272,y:527,w:50,h:148},
-  {x:755,y:664,w:24,h:200},
-  {x:786,y:698,w:72,h:116},
-  {x:1115,y:821,w:233,h:51},
-  {x:1106,y:739,w:32,h:200},
-  {x:957,y:746,w:34,h:200},
-  {x:407,y:808,w:89,h:152},
-  {x:383,y:993,w:142,h:91},
-  {x:148,y:1144,w:66,h:191},
-  {x:545,y:1261,w:29,h:271},
-  {x:120,y:1329,w:226,h:209},
-  {x:573,y:1333,w:234,h:200},
-  {x:715,y:1087,w:61,h:237},
-  {x:643,y:1115,w:113,h:92},
-  {x:632,y:1196,w:74,h:31},
-  {x:661,y:1172,w:60,h:85},
-  {x:401,y:1111,w:109,h:71},
-  {x:983,y:410,w:128,h:29},
-  {x:1147,y:443,w:20,h:63},
-  {x:995,y:531,w:124,h:24},
-  {x:1094,y:510,w:57,h:20},
-  {x:955,y:511,w:34,h:20},
-  {x:1108,y:422,w:39,h:30},
-  {x:961,y:426,w:25,h:26},
-  {x:1504,y:489,w:260,h:93},
+  // ─ Outer corner cuts (the octagonal corners of the building) ─
+  {x:0,    y:0,    w:280,  h:140 },   // top-left corner cut
+  {x:1770, y:0,    w:280,  h:140 },   // top-right corner cut
+  {x:0,    y:1900, w:300,  h:148 },   // bottom-left corner cut
+  {x:1750, y:1900, w:300,  h:148 },   // bottom-right corner cut
+
+  // ─ Outer perimeter walls (top/left/right/bottom strips) ─
+  {x:0,    y:0,    w:2048, h:80  },   // top
+  {x:0,    y:0,    w:80,   h:2048},   // left
+  {x:1970, y:0,    w:80,   h:2048},   // right
+  {x:0,    y:1980, w:880,  h:70  },   // bottom-left strip
+  {x:1180, y:1980, w:870,  h:70  },   // bottom-right strip (roof door slot in middle)
+
+  // ─ GARAGE outer walls (left side, x:80-700, y:140-1240) ─
+  {x:680,  y:140,  w:35,   h:1100},   // right wall of garage
+  {x:80,   y:1180, w:625,  h:80  },   // bottom wall of garage
+  // Garage cars (~5 cars on left, 1 alone on right)
+  {x:140,  y:170,  w:550,  h:230 },   // top row of 3 cars
+  {x:140,  y:430,  w:170,  h:230 },   // 2nd row car
+  {x:140,  y:680,  w:170,  h:230 },   // 3rd row car
+  {x:140,  y:920,  w:170,  h:240 },   // 4th row car
+  {x:140,  y:1160, w:170,  h:60  },   // 5th car partial
+  {x:480,  y:850,  w:170,  h:140 },   // lone right-side car
+
+  // ─ MAIL ROOM (top center, x:740-1040, y:110-550) ─
+  {x:740,  y:110,  w:35,   h:450 },   // left wall
+  {x:1040, y:110,  w:35,   h:450 },   // right wall
+  {x:740,  y:540,  w:335,  h:35  },   // bottom wall (with door gap)
+  {x:780,  y:140,  w:280,  h:100 },   // back shelves
+  {x:830,  y:280,  w:230,  h:200 },   // package pile / counter
+  {x:760,  y:280,  w:75,   h:180 },   // YARDI sign / left counter
+
+  // ─ GYM (top right, x:1450-1970, y:110-560) ─
+  {x:1450, y:110,  w:35,   h:450 },   // left wall
+  {x:1450, y:540,  w:520,  h:35  },   // bottom wall
+  {x:1500, y:160,  w:120,  h:280 },   // yoga mats / equipment block
+  {x:1700, y:140,  w:240,  h:380 },   // treadmills + weights
+
+  // ─ POOL (right, x:1440-1970, y:620-1280) ─
+  {x:1440, y:620,  w:35,   h:700 },   // left wall
+  {x:1440, y:1290, w:530,  h:35  },   // bottom wall
+  {x:1600, y:720,  w:300,  h:520 },   // pool itself + loungers area
+
+  // ─ OFFICE (center, x:900-1290, y:880-1240) ─
+  {x:900,  y:880,  w:35,   h:380 },   // left wall
+  {x:1290, y:880,  w:35,   h:380 },   // right wall
+  {x:900,  y:850,  w:425,  h:35  },   // top wall
+  {x:900,  y:1240, w:425,  h:35  },   // bottom wall
+  {x:960,  y:950,  w:330,  h:240 },   // desk cluster
+
+  // ─ DINING / KITCHEN (bottom left, x:80-560, y:1380-1900) ─
+  {x:540,  y:1380, w:35,   h:540 },   // right wall
+  {x:80,   y:1380, w:480,  h:35  },   // top wall
+  {x:140,  y:1450, w:380,  h:330 },   // table + chairs cluster
+
+  // ─ BOILER ROOM (bottom center, x:580-980, y:1380-1820) ─
+  {x:580,  y:1380, w:35,   h:430 },   // left wall
+  {x:960,  y:1380, w:35,   h:430 },   // right wall
+  {x:580,  y:1800, w:415,  h:35  },   // bottom wall
+  {x:620,  y:1440, w:330,  h:350 },   // boiler + pipes cluster
+
+  // ─ ROOF ACCESS stairwell (bottom center, x:880-1180, y:1820-2000) ─
+  // (intentionally NO collision inside — Sarah walks through it to win)
+  {x:880,  y:1820, w:35,   h:180 },   // left side of stairwell opening
+  {x:1145, y:1820, w:35,   h:180 },   // right side of stairwell opening
+
+  // ─ PARTY ROOM (bottom right, x:1340-1970, y:1340-1980) ─
+  {x:1340, y:1340, w:35,   h:640 },   // left wall
+  {x:1340, y:1310, w:630,  h:35  },   // top wall
+  {x:1400, y:1400, w:230,  h:260 },   // couch / coffee table area
+  {x:1700, y:1380, w:240,  h:300 },   // TV wall area
+  {x:1400, y:1750, w:540,  h:200 },   // bottom seating area
+
+  // ─ Central lobby hub furniture (round desk in the middle) ─
+  {x:680,  y:780,  w:230,  h:180 },   // round reception desk
+  {x:870,  y:1000, w:140,  h:150 },   // potted plant cluster
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
-var LS_KEY = 'pw_collisions_v1';
+var LS_KEY = 'pw_collisions_v2';
 var COLLISIONS = [];
 var LS_OK = true;  // becomes false if localStorage is blocked (e.g. preview sandbox)
 function loadCollisions(){
@@ -139,8 +156,8 @@ function sizeCanvas(){
 }
 
 function placePlayer(){
-  // Lobby spawn: center-top of map
-  P.x=WORLD.w*0.50; P.y=WORLD.h*0.30;
+  // V2 map: spawn in central lobby hallway hub (around the round desk)
+  P.x=WORLD.w*0.45; P.y=WORLD.h*0.48;
   // If that lands inside a wall, spiral outward to find clear ground
   if(!canStand(P.x, P.y)){
     var step = 40;
