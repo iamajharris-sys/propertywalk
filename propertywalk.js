@@ -6,17 +6,16 @@ var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18f
 
 // ── SPRITE SHEET (Sarah v7 hybrid, 4x4 grid of 512px cells) ──
 // Layout:  row 0 = facing DOWN (4 frames, mostly static)
-//          row 1 = unused (frames are inconsistent in orientation)
-//          row 2 = SIDE WALK (4-frame walk cycle, all RIGHT-facing)
-//                  → used for RIGHT as-is, mirrored horizontally for LEFT
-//          row 3 = facing UP (4 frames, static back view)
+//          row 1 = facing LEFT  (4-frame walk cycle — nice shuffle)
+//          row 2 = facing RIGHT (4-frame walk cycle)
+//          row 3 = facing UP    (4 frames, static back view)
 var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a19f496591fd8eff2dadc78_sarah_v7_final.png';
 var CELL = 512;
-// Map facing direction to {row, mirror} so we can render left-facing by
-// mirroring the same row used for right. Row 2 is right-facing in the source.
+// Map facing direction to {row, mirror}. No mirroring needed — each row
+// already faces the correct way.
 var FACING_FRAME = {
   down:  { row:0, mirror:false },
-  left:  { row:2, mirror:true  },
+  left:  { row:1, mirror:false },
   right: { row:2, mirror:false },
   up:    { row:3, mirror:false },
 };
