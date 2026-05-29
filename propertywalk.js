@@ -13,14 +13,16 @@ var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18f
 var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1a123b82851905195d55d1_sarah_v7_final.png';
 var CELL = 512;
 // Map facing direction to {row, mirror, dx, dy}. dx/dy nudge the sprite
-// relative to the shadow position to keep her body centered on the shadow.
+// relative to the footbox anchor (P.x, P.y = bottom-center of footbox).
+// ZEROED OUT for clean tuning baseline. Turn on Edit mode to see the footbox
+// rectangle and align Sarah's feet to it one direction at a time.
 // Negative dx = move LEFT, positive dx = move RIGHT.
 // Negative dy = move UP, positive dy = move DOWN.
 var FACING_FRAME = {
-  down:  { row:0, mirror:false, dx:-15, dy:-20 },
-  left:  { row:1, mirror:false, dx:15,  dy:55  },
-  right: { row:1, mirror:true,  dx:25,  dy:55  },
-  up:    { row:3, mirror:false, dx:-15, dy:-30 },
+  down:  { row:0, mirror:false, dx:0, dy:0 },
+  left:  { row:1, mirror:false, dx:0, dy:0 },
+  right: { row:1, mirror:true,  dx:0, dy:0 },
+  up:    { row:3, mirror:false, dx:0, dy:0 },
 };
 // Number of frames per walk cycle (4 in our new sheet).
 var WALK_LEN   = 4;
