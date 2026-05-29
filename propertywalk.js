@@ -12,13 +12,15 @@ var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18f
 //          row 3 = facing UP    (4 frames, static back view)
 var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1a123b82851905195d55d1_sarah_v7_final.png';
 var CELL = 512;
-// Map facing direction to {row, mirror}. LEFT uses row 1 unmirrored.
-// RIGHT uses the same row 1 mirrored — guarantees identical shuffle both ways.
+// Map facing direction to {row, mirror, dx, dy}. dx/dy nudge the sprite
+// relative to the shadow position to keep her body centered on the shadow.
+// Negative dx = move LEFT, positive dx = move RIGHT.
+// Negative dy = move UP, positive dy = move DOWN.
 var FACING_FRAME = {
-  down:  { row:0, mirror:false },
-  left:  { row:1, mirror:false },
-  right: { row:1, mirror:true  },
-  up:    { row:3, mirror:false },
+  down:  { row:0, mirror:false, dx:0,  dy:0 },
+  left:  { row:1, mirror:false, dx:0,  dy:0 },
+  right: { row:1, mirror:true,  dx:0,  dy:0 },
+  up:    { row:3, mirror:false, dx:0,  dy:0 },
 };
 // Number of frames per walk cycle (4 in our new sheet).
 var WALK_LEN   = 4;
@@ -573,15 +575,19 @@ function drawPlayer(){
     // Look up which row and whether to mirror, based on facing direction.
     var f = FACING_FRAME[P.facing] || FACING_FRAME.down;
     var col = P.moving ? (P.fr % WALK_LEN) : 0;
+    // Per-direction nudge so Sarah's body stays centered on the shadow.
+    // Scales with zoom so it stays visually consistent at any zoom level.
+    var offX = (f.dx||0) * ZOOM;
+    var offY = (f.dy||0) * ZOOM;
     if(f.mirror){
       // Flip the sprite horizontally by scaling x by -1.
       ctx.save();
-      ctx.translate(dx + sw, dy);
+      ctx.translate(dx + sw + offX, dy + offY);
       ctx.scale(-1, 1);
       ctx.drawImage(sheet, col*CELL, f.row*CELL, CELL, CELL, 0, 0, sw, sh);
       ctx.restore();
     } else {
-      ctx.drawImage(sheet, col*CELL, f.row*CELL, CELL, CELL, dx, dy, sw, sh);
+      ctx.drawImage(sheet, col*CELL, f.row*CELL, CELL, CELL, dx+offX, dy+offY, sw, sh);
     }
   } else {
     ctx.fillStyle='#1A2B4A'; ctx.fillRect(dx,dy,sw,sh);
