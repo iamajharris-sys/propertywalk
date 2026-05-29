@@ -22,84 +22,81 @@ var mapImg = new Image(); var mapReady=false, mapFailed=false;
 var WORLD = { w: 2048, h: 2048 };
 
 // ── COLLISION BOXES (world-pixel coords for the 2048x2048 V2 map) ──
-// First-pass starting set for the new asymmetric map. AJ will tune in the editor.
+// Tuned by AJ in the edit layer.
 var COLLISION_DEFAULTS = [
-  // ─ Outer corner cuts (the octagonal corners of the building) ─
-  {x:0,    y:0,    w:280,  h:140 },   // top-left corner cut
-  {x:1770, y:0,    w:280,  h:140 },   // top-right corner cut
-  {x:0,    y:1900, w:300,  h:148 },   // bottom-left corner cut
-  {x:1750, y:1900, w:300,  h:148 },   // bottom-right corner cut
-
-  // ─ Outer perimeter walls (top/left/right/bottom strips) ─
-  {x:0,    y:0,    w:2048, h:80  },   // top
-  {x:0,    y:0,    w:80,   h:2048},   // left
-  {x:1970, y:0,    w:80,   h:2048},   // right
-  {x:0,    y:1980, w:880,  h:70  },   // bottom-left strip
-  {x:1180, y:1980, w:870,  h:70  },   // bottom-right strip (roof door slot in middle)
-
-  // ─ GARAGE outer walls (left side, x:80-700, y:140-1240) ─
-  {x:680,  y:140,  w:35,   h:1100},   // right wall of garage
-  {x:80,   y:1180, w:625,  h:80  },   // bottom wall of garage
-  // Garage cars (~5 cars on left, 1 alone on right)
-  {x:140,  y:170,  w:550,  h:230 },   // top row of 3 cars
-  {x:140,  y:430,  w:170,  h:230 },   // 2nd row car
-  {x:140,  y:680,  w:170,  h:230 },   // 3rd row car
-  {x:140,  y:920,  w:170,  h:240 },   // 4th row car
-  {x:140,  y:1160, w:170,  h:60  },   // 5th car partial
-  {x:480,  y:850,  w:170,  h:140 },   // lone right-side car
-
-  // ─ MAIL ROOM (top center, x:740-1040, y:110-550) ─
-  {x:740,  y:110,  w:35,   h:450 },   // left wall
-  {x:1040, y:110,  w:35,   h:450 },   // right wall
-  {x:740,  y:540,  w:335,  h:35  },   // bottom wall (with door gap)
-  {x:780,  y:140,  w:280,  h:100 },   // back shelves
-  {x:830,  y:280,  w:230,  h:200 },   // package pile / counter
-  {x:760,  y:280,  w:75,   h:180 },   // YARDI sign / left counter
-
-  // ─ GYM (top right, x:1450-1970, y:110-560) ─
-  {x:1450, y:110,  w:35,   h:450 },   // left wall
-  {x:1450, y:540,  w:520,  h:35  },   // bottom wall
-  {x:1500, y:160,  w:120,  h:280 },   // yoga mats / equipment block
-  {x:1700, y:140,  w:240,  h:380 },   // treadmills + weights
-
-  // ─ POOL (right, x:1440-1970, y:620-1280) ─
-  {x:1440, y:620,  w:35,   h:700 },   // left wall
-  {x:1440, y:1290, w:530,  h:35  },   // bottom wall
-  {x:1600, y:720,  w:300,  h:520 },   // pool itself + loungers area
-
-  // ─ OFFICE (center, x:900-1290, y:880-1240) ─
-  {x:900,  y:880,  w:35,   h:380 },   // left wall
-  {x:1290, y:880,  w:35,   h:380 },   // right wall
-  {x:900,  y:850,  w:425,  h:35  },   // top wall
-  {x:900,  y:1240, w:425,  h:35  },   // bottom wall
-  {x:960,  y:950,  w:330,  h:240 },   // desk cluster
-
-  // ─ DINING / KITCHEN (bottom left, x:80-560, y:1380-1900) ─
-  {x:540,  y:1380, w:35,   h:540 },   // right wall
-  {x:80,   y:1380, w:480,  h:35  },   // top wall
-  {x:140,  y:1450, w:380,  h:330 },   // table + chairs cluster
-
-  // ─ BOILER ROOM (bottom center, x:580-980, y:1380-1820) ─
-  {x:580,  y:1380, w:35,   h:430 },   // left wall
-  {x:960,  y:1380, w:35,   h:430 },   // right wall
-  {x:580,  y:1800, w:415,  h:35  },   // bottom wall
-  {x:620,  y:1440, w:330,  h:350 },   // boiler + pipes cluster
-
-  // ─ ROOF ACCESS stairwell (bottom center, x:880-1180, y:1820-2000) ─
-  // (intentionally NO collision inside — Sarah walks through it to win)
-  {x:880,  y:1820, w:35,   h:180 },   // left side of stairwell opening
-  {x:1145, y:1820, w:35,   h:180 },   // right side of stairwell opening
-
-  // ─ PARTY ROOM (bottom right, x:1340-1970, y:1340-1980) ─
-  {x:1340, y:1340, w:35,   h:640 },   // left wall
-  {x:1340, y:1310, w:630,  h:35  },   // top wall
-  {x:1400, y:1400, w:230,  h:260 },   // couch / coffee table area
-  {x:1700, y:1380, w:240,  h:300 },   // TV wall area
-  {x:1400, y:1750, w:540,  h:200 },   // bottom seating area
-
-  // ─ Central lobby hub furniture (round desk in the middle) ─
-  {x:680,  y:780,  w:230,  h:180 },   // round reception desk
-  {x:870,  y:1000, w:140,  h:150 },   // potted plant cluster
+  {x:0,y:0,w:280,h:140},
+  {x:1770,y:0,w:280,h:140},
+  {x:0,y:1900,w:300,h:148},
+  {x:1750,y:1900,w:300,h:148},
+  {x:0,y:0,w:2048,h:80},
+  {x:0,y:0,w:80,h:2048},
+  {x:1970,y:0,w:80,h:2048},
+  {x:0,y:1980,w:880,h:70},
+  {x:1180,y:1980,w:870,h:70},
+  {x:751,y:140,w:35,h:1100},
+  {x:700,y:1221,w:54,h:39},
+  {x:140,y:170,w:550,h:230},
+  {x:140,y:430,w:170,h:230},
+  {x:140,y:680,w:170,h:230},
+  {x:140,y:920,w:170,h:240},
+  {x:140,y:1160,w:170,h:60},
+  {x:480,y:850,w:170,h:140},
+  {x:740,y:110,w:35,h:450},
+  {x:1040,y:110,w:35,h:450},
+  {x:740,y:540,w:335,h:35},
+  {x:780,y:140,w:280,h:100},
+  {x:830,y:280,w:230,h:200},
+  {x:760,y:280,w:75,h:180},
+  {x:1450,y:110,w:35,h:450},
+  {x:1450,y:540,w:520,h:35},
+  {x:1500,y:160,w:120,h:280},
+  {x:1700,y:140,w:240,h:380},
+  {x:1440,y:620,w:35,h:700},
+  {x:1440,y:1290,w:530,h:35},
+  {x:1600,y:720,w:300,h:520},
+  {x:816,y:783,w:95,h:100},
+  {x:1096,y:1074,w:20,h:120},
+  {x:1106,y:828,w:425,h:35},
+  {x:1121,y:1138,w:100,h:81},
+  {x:791,y:909,w:50,h:201},
+  {x:540,y:1380,w:35,h:540},
+  {x:80,y:1380,w:480,h:35},
+  {x:140,y:1450,w:380,h:330},
+  {x:580,y:1380,w:35,h:430},
+  {x:960,y:1380,w:35,h:430},
+  {x:580,y:1800,w:415,h:35},
+  {x:721,y:1386,w:20,h:143},
+  {x:880,y:1820,w:35,h:180},
+  {x:1145,y:1820,w:35,h:180},
+  {x:1340,y:1340,w:35,h:640},
+  {x:1340,y:1310,w:630,h:35},
+  {x:1400,y:1400,w:230,h:260},
+  {x:1700,y:1380,w:240,h:300},
+  {x:1400,y:1750,w:540,h:200},
+  {x:879,y:729,w:71,h:101},
+  {x:811,y:796,w:128,h:64},
+  {x:964,y:991,w:54,h:58},
+  {x:1096,y:831,w:20,h:180},
+  {x:1142,y:987,w:96,h:59},
+  {x:1322,y:1133,w:108,h:90},
+  {x:932,y:1235,w:70,h:119},
+  {x:922,y:1248,w:61,h:50},
+  {x:832,y:1333,w:134,h:28},
+  {x:876,y:1292,w:71,h:29},
+  {x:758,y:1158,w:55,h:44},
+  {x:717,y:1193,w:44,h:36},
+  {x:671,y:1242,w:24,h:35},
+  {x:656,y:1293,w:35,h:26},
+  {x:863,y:1269,w:20,h:48},
+  {x:632,y:1305,w:34,h:35},
+  {x:596,y:1328,w:43,h:33},
+  {x:807,y:1367,w:151,h:33},
+  {x:701,y:1405,w:29,h:34},
+  {x:672,y:1432,w:31,h:26},
+  {x:653,y:1458,w:35,h:24},
+  {x:997,y:1265,w:35,h:25},
+  {x:999,y:1314,w:221,h:20},
+  {x:1024,y:1289,w:34,h:20},
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
