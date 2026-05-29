@@ -4,15 +4,22 @@
 // still see the camera-follow + walking working.
 var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18fb36eaf2c95302ebeb26_Map%20V3.png';
 
-// ── SPRITE SHEET (Sarah v4, 4x4 grid of 512px cells) ──
-// Layout:  row 0 = facing DOWN (4 frames)
-//          row 1 = facing LEFT (4-frame walk)
-//          row 2 = facing RIGHT (4-frame walk)
-//          row 3 = facing UP (4 frames)
+// ── SPRITE SHEET (Sarah v7 hybrid, 4x4 grid of 512px cells) ──
+// Layout:  row 0 = facing DOWN (4 frames, mostly static)
+//          row 1 = unused (frames are inconsistent in orientation)
+//          row 2 = SIDE WALK (4-frame walk cycle, all left-facing)
+//                  → used for LEFT as-is, mirrored horizontally for RIGHT
+//          row 3 = facing UP (4 frames, static back view)
 var SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a19f496591fd8eff2dadc78_sarah_v7_final.png';
 var CELL = 512;
-// Which row of the sprite sheet to use for each facing direction.
-var FACING_ROW = { down:0, left:1, right:2, up:3 };
+// Map facing direction to {row, mirror} so we can render right-facing by
+// mirroring the same row used for left.
+var FACING_FRAME = {
+  down:  { row:0, mirror:false },
+  left:  { row:2, mirror:false },
+  right: { row:2, mirror:true  },
+  up:    { row:3, mirror:false },
+};
 // Number of frames per walk cycle (4 in our new sheet).
 var WALK_LEN   = 4;
 // How many game-loop ticks each frame is held (lower = faster animation).
@@ -563,11 +570,19 @@ function drawPlayer(){
   var dx = footX - sw/2, dy = footY - sh;
 
   if(sheet.complete && sheet.naturalWidth){
-    // Pick row based on facing direction; pick column based on walk frame.
-    // When standing still, lock to frame 0 (the "neutral standing" pose).
-    var row = FACING_ROW[P.facing] !== undefined ? FACING_ROW[P.facing] : FACING_ROW.down;
+    // Look up which row and whether to mirror, based on facing direction.
+    var f = FACING_FRAME[P.facing] || FACING_FRAME.down;
     var col = P.moving ? (P.fr % WALK_LEN) : 0;
-    ctx.drawImage(sheet, col*CELL, row*CELL, CELL, CELL, dx, dy, sw, sh);
+    if(f.mirror){
+      // Flip the sprite horizontally by scaling x by -1.
+      ctx.save();
+      ctx.translate(dx + sw, dy);
+      ctx.scale(-1, 1);
+      ctx.drawImage(sheet, col*CELL, f.row*CELL, CELL, CELL, 0, 0, sw, sh);
+      ctx.restore();
+    } else {
+      ctx.drawImage(sheet, col*CELL, f.row*CELL, CELL, CELL, dx, dy, sw, sh);
+    }
   } else {
     ctx.fillStyle='#1A2B4A'; ctx.fillRect(dx,dy,sw,sh);
   }
@@ -630,6 +645,36 @@ function fadeInMenuMusic(){
   musicFadeT = setInterval(function(){
     if(menuMusic.volume < MUSIC_VOL-0.04){ menuMusic.volume += 0.04; }
     else { menuMusic.volume = MUSIC_VOL; clearInterval(musicFadeT); musicFadeT=null; }
+  }, 60);
+}
+
+// ── GAMEPLAY MUSIC ────────────────────────────────────────────────
+// Plays in a loop while STATE === 'playing'. Fades out on game over,
+// fades back in on next play.
+var GAMEPLAY_MUSIC_URL = 'https://cdn.jsdelivr.net/gh/iamajharris-sys/propertywalk@main/happy_adveture.mp3';
+var gameplayMusic = new Audio(GAMEPLAY_MUSIC_URL);
+gameplayMusic.loop = true;
+gameplayMusic.volume = MUSIC_VOL;
+var gameplayFadeT = null;
+
+function startGameplayMusic(){
+  if(IS_MUTED){ return; }
+  if(gameplayFadeT){ clearInterval(gameplayFadeT); gameplayFadeT=null; }
+  gameplayMusic.currentTime = 0;
+  gameplayMusic.volume = 0;
+  var p = gameplayMusic.play();
+  if(p && p.catch){ p.catch(function(){}); }
+  gameplayFadeT = setInterval(function(){
+    if(gameplayMusic.volume < MUSIC_VOL-0.04){ gameplayMusic.volume += 0.04; }
+    else { gameplayMusic.volume = MUSIC_VOL; clearInterval(gameplayFadeT); gameplayFadeT=null; }
+  }, 60);
+}
+
+function stopGameplayMusic(){
+  if(gameplayFadeT){ clearInterval(gameplayFadeT); gameplayFadeT=null; }
+  gameplayFadeT = setInterval(function(){
+    if(gameplayMusic.volume > 0.04){ gameplayMusic.volume -= 0.04; }
+    else { gameplayMusic.pause(); gameplayMusic.currentTime=0; gameplayMusic.volume=MUSIC_VOL; clearInterval(gameplayFadeT); gameplayFadeT=null; }
   }, 60);
 }
 
@@ -807,6 +852,7 @@ function beginGameplay(){
   document.getElementById('power-banner').classList.remove('show');
   spawnItems();
   spawnZombies();
+  startGameplayMusic();
 }
 
 function activatePowerMode(){
@@ -1037,6 +1083,7 @@ function triggerGameOver(byZombie){
   var byName = ZOMBIE_CHARACTERS[byZombie.char].name;
   document.getElementById('resign-by').textContent = byName;
   document.getElementById('resign-screen').classList.add('show');
+  stopGameplayMusic();
 }
 function returnToMenu(){
   STATE = 'menu';
