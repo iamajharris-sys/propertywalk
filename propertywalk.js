@@ -21,7 +21,7 @@ var mapImg = new Image(); var mapReady=false, mapFailed=false;
 // World dimensions (set once the map loads; placeholder until then)
 var WORLD = { w: 2048, h: 2048 };
 
-// ── COLLISION BOXES (world-pixel coords for the 2048x2048 V2 map) ──
+// ── COLLISION BOXES (world-pixel coords for the 2048x2048 V3 map) ──
 // Tuned by AJ in the edit layer.
 var COLLISION_DEFAULTS = [
   {x:0,y:0,w:280,h:140},
@@ -33,44 +33,44 @@ var COLLISION_DEFAULTS = [
   {x:1970,y:0,w:80,h:2048},
   {x:0,y:1980,w:880,h:70},
   {x:1180,y:1980,w:870,h:70},
-  {x:751,y:140,w:35,h:1100},
+  {x:505,y:223,w:58,h:133},
   {x:700,y:1221,w:54,h:39},
-  {x:140,y:170,w:550,h:230},
-  {x:140,y:430,w:170,h:230},
-  {x:140,y:680,w:170,h:230},
-  {x:140,y:920,w:170,h:240},
-  {x:140,y:1160,w:170,h:60},
-  {x:480,y:850,w:170,h:140},
-  {x:740,y:110,w:35,h:450},
-  {x:1040,y:110,w:35,h:450},
-  {x:740,y:540,w:335,h:35},
+  {x:607,y:237,w:80,h:157},
+  {x:224,y:402,w:138,h:66},
+  {x:220,y:513,w:135,h:53},
+  {x:200,y:1050,w:153,h:57},
+  {x:190,y:1170,w:170,h:60},
+  {x:597,y:943,w:123,h:60},
+  {x:390,y:240,w:62,h:103},
+  {x:1218,y:113,w:51,h:450},
+  {x:1374,y:786,w:102,h:65},
   {x:780,y:140,w:280,h:100},
-  {x:830,y:280,w:230,h:200},
-  {x:760,y:280,w:75,h:180},
-  {x:1450,y:110,w:35,h:450},
-  {x:1450,y:540,w:520,h:35},
-  {x:1500,y:160,w:120,h:280},
-  {x:1700,y:140,w:240,h:380},
-  {x:1440,y:620,w:35,h:700},
+  {x:830,y:329,w:71,h:150},
+  {x:763,y:250,w:65,h:107},
+  {x:1379,y:129,w:31,h:421},
+  {x:1501,y:555,w:469,h:20},
+  {x:1880,y:1220,w:117,h:147},
+  {x:1847,y:250,w:37,h:317},
+  {x:1544,y:692,w:342,h:28},
   {x:1440,y:1290,w:530,h:35},
-  {x:1600,y:720,w:300,h:520},
+  {x:1078,y:726,w:214,h:34},
   {x:816,y:783,w:95,h:100},
   {x:1096,y:1074,w:20,h:120},
-  {x:1106,y:828,w:425,h:35},
-  {x:1121,y:1138,w:100,h:81},
+  {x:1106,y:828,w:395,h:92},
+  {x:1121,y:1133,w:107,h:86},
   {x:791,y:909,w:50,h:201},
-  {x:540,y:1380,w:35,h:540},
+  {x:263,y:1823,w:235,h:37},
   {x:80,y:1380,w:480,h:35},
-  {x:140,y:1450,w:380,h:330},
-  {x:580,y:1380,w:35,h:430},
+  {x:220,y:1303,w:380,h:80},
+  {x:590,y:1527,w:32,h:250},
   {x:960,y:1380,w:35,h:430},
   {x:580,y:1800,w:415,h:35},
   {x:721,y:1386,w:20,h:143},
   {x:880,y:1820,w:35,h:180},
   {x:1145,y:1820,w:35,h:180},
   {x:1340,y:1340,w:35,h:640},
-  {x:1340,y:1310,w:630,h:35},
-  {x:1400,y:1400,w:230,h:260},
+  {x:1880,y:678,w:147,h:127},
+  {x:597,y:550,w:137,h:130},
   {x:1700,y:1380,w:240,h:300},
   {x:1400,y:1750,w:540,h:200},
   {x:879,y:729,w:71,h:101},
@@ -97,6 +97,35 @@ var COLLISION_DEFAULTS = [
   {x:997,y:1265,w:35,h:25},
   {x:999,y:1314,w:221,h:20},
   {x:1024,y:1289,w:34,h:20},
+  {x:1511,y:577,w:262,h:104},
+  {x:1467,y:619,w:48,h:42},
+  {x:1147,y:629,w:170,h:86},
+  {x:1399,y:765,w:50,h:56},
+  {x:1274,y:235,w:110,h:107},
+  {x:1435,y:828,w:20,h:433},
+  {x:1340,y:986,w:98,h:55},
+  {x:1173,y:1051,w:31,h:31},
+  {x:1369,y:1064,w:29,h:20},
+  {x:1489,y:602,w:37,h:31},
+  {x:1316,y:660,w:39,h:30},
+  {x:950,y:287,w:141,h:104},
+  {x:926,y:477,w:33,h:70},
+  {x:1083,y:469,w:43,h:76},
+  {x:284,y:143,w:493,h:67},
+  {x:224,y:714,w:120,h:58},
+  {x:212,y:824,w:139,h:63},
+  {x:171,y:240,w:43,h:530},
+  {x:196,y:169,w:93,h:125},
+  {x:664,y:667,w:191,h:116},
+  {x:699,y:607,w:91,h:59},
+  {x:606,y:660,w:66,h:61},
+  {x:716,y:784,w:104,h:64},
+  {x:692,y:579,w:65,h:56},
+  {x:687,y:753,w:83,h:54},
+  {x:630,y:708,w:56,h:46},
+  {x:768,y:1114,w:58,h:36},
+  {x:73,y:1173,w:140,h:209},
+  {x:72,y:734,w:99,h:141},
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
@@ -140,7 +169,7 @@ var canvas, ctx, VW, VH;        // viewport (canvas) size in CSS px
 var ZOOM = 2.2;                 // how zoomed-in the camera is
 var cam = { x:0, y:0 };         // camera top-left in WORLD coords
 
-var P = { x:1024, y:1024, w:90, h:150, faceRight:true, moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0 };
+var P = { x:1024, y:1024, w:72, h:120, faceRight:true, moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0 };
 var K = { up:false, down:false, left:false, right:false };
 var JOY = { active:false, vx:0, vy:0, id:null, bx:0, by:0 };
 
@@ -669,10 +698,34 @@ function updateInventoryHUD(){
 }
 
 function startGame(){
-  STATE = 'playing';
+  // "Start Game" button click → hide menu, kill music, play cutscene.
+  // When cutscene ends, beginGameplay() runs.
+  STATE = 'cutscene';
   document.getElementById('menu-screen').classList.add('hidden');
+  // Hard-stop menu music (not fade — cutscene has its own audio)
+  if(menuMusic){ menuMusic.pause(); menuMusic.currentTime = 0; }
+  if(musicFadeT){ clearInterval(musicFadeT); musicFadeT = null; }
+  // Show and play the cutscene
+  var screen = document.getElementById('cutscene-screen');
+  var video  = document.getElementById('cutscene-video');
+  screen.classList.add('show');
+  video.currentTime = 0;
+  // Wire up the end handler once
+  if(!video._wired){
+    video.addEventListener('ended', beginGameplay);
+    // Safety net: if the video errors or stalls, start gameplay after 9s
+    setTimeout(function(){ if(STATE==='cutscene') beginGameplay(); }, 9000);
+    video._wired = true;
+  }
+  var p = video.play();
+  if(p && p.catch){ p.catch(function(){ /* shouldn't happen — Start click counts as user gesture */ beginGameplay(); }); }
+}
+
+function beginGameplay(){
+  if(STATE === 'playing') return;  // guard against double-fire
+  STATE = 'playing';
+  document.getElementById('cutscene-screen').classList.remove('show');
   document.getElementById('inv-hud').classList.add('show');
-  fadeOutMenuMusic();
   // Reset world state
   placePlayer();
   resetInventory();
