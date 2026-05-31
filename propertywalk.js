@@ -2,7 +2,7 @@
 // Paste your Webflow map URL here. The game loads it as the world.
 // Until a real map is set, a placeholder grid world is used so you can
 // still see the camera-follow + walking working.
-var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a18fb36eaf2c95302ebeb26_Map%20V3.png';
+var MAP_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1b803aedaee5a60b52c2f9_New%20Map.png';
 
 // ── SPRITE SHEET (Sarah v7 hybrid, 4x4 grid of 512px cells) ──
 // Layout:  row 0 = facing DOWN (4 frames, mostly static)
@@ -36,178 +36,193 @@ var mapImg = new Image(); var mapReady=false, mapFailed=false;
 // World dimensions (set once the map loads; placeholder until then)
 var WORLD = { w: 2048, h: 2048 };
 
-// ── COLLISION BOXES (world-pixel coords for the 2048x2048 V3 map) ──
-// Tuned by AJ in the edit layer.
+// ── COLLISION BOXES (world-pixel coords for the 2048x2048 New Map) ──
+// First-pass rough boxes — AJ to refine in edit mode.
 var COLLISION_DEFAULTS = [
-  {x:0,y:0,w:280,h:140},
-  {x:1770,y:0,w:280,h:140},
-  {x:0,y:1900,w:300,h:148},
-  {x:1750,y:1900,w:300,h:148},
-  {x:0,y:0,w:2048,h:80},
-  {x:0,y:0,w:80,h:2048},
-  {x:1970,y:0,w:80,h:2048},
-  {x:0,y:1980,w:880,h:70},
-  {x:1180,y:1980,w:870,h:70},
-  {x:512,y:222,w:54,h:133},
-  {x:700,y:1221,w:54,h:39},
-  {x:622,y:228,w:54,h:126},
-  {x:224,y:402,w:138,h:66},
-  {x:220,y:513,w:135,h:53},
-  {x:200,y:1050,w:153,h:57},
-  {x:190,y:1170,w:170,h:60},
-  {x:597,y:943,w:123,h:60},
-  {x:399,y:242,w:53,h:103},
-  {x:1218,y:113,w:51,h:433},
-  {x:1374,y:786,w:107,h:65},
-  {x:848,y:133,w:99,h:126},
-  {x:830,y:329,w:71,h:150},
-  {x:763,y:250,w:65,h:107},
-  {x:1379,y:129,w:31,h:421},
-  {x:1501,y:555,w:469,h:20},
-  {x:1853,y:768,w:44,h:54},
-  {x:1847,y:250,w:37,h:317},
-  {x:1544,y:692,w:342,h:28},
-  {x:1523,y:1294,w:530,h:35},
-  {x:1078,y:726,w:214,h:34},
-  {x:816,y:783,w:95,h:100},
-  {x:1096,y:1074,w:20,h:120},
-  {x:1106,y:828,w:395,h:92},
-  {x:1121,y:1133,w:107,h:86},
-  {x:791,y:909,w:50,h:201},
-  {x:263,y:1823,w:235,h:37},
-  {x:80,y:1380,w:480,h:35},
-  {x:220,y:1303,w:380,h:80},
-  {x:590,y:1527,w:32,h:250},
-  {x:960,y:1380,w:35,h:430},
-  {x:580,y:1800,w:415,h:35},
-  {x:721,y:1386,w:20,h:143},
-  {x:880,y:1820,w:35,h:180},
-  {x:1145,y:1820,w:35,h:180},
-  {x:1344,y:1453,w:35,h:640},
-  {x:1880,y:678,w:147,h:127},
-  {x:597,y:550,w:137,h:130},
-  {x:1400,y:1791,w:540,h:159},
-  {x:879,y:729,w:71,h:101},
-  {x:811,y:796,w:128,h:64},
-  {x:964,y:991,w:54,h:58},
-  {x:1096,y:831,w:20,h:180},
-  {x:1142,y:987,w:96,h:59},
-  {x:1322,y:1133,w:108,h:90},
-  {x:932,y:1235,w:70,h:119},
-  {x:922,y:1248,w:61,h:50},
-  {x:832,y:1333,w:134,h:28},
-  {x:876,y:1292,w:71,h:29},
-  {x:758,y:1158,w:55,h:44},
-  {x:717,y:1193,w:44,h:36},
-  {x:671,y:1235,w:24,h:35},
-  {x:656,y:1293,w:35,h:26},
-  {x:863,y:1269,w:20,h:48},
-  {x:632,y:1305,w:34,h:35},
-  {x:596,y:1328,w:43,h:33},
-  {x:807,y:1367,w:151,h:33},
-  {x:701,y:1405,w:29,h:34},
-  {x:672,y:1432,w:31,h:26},
-  {x:653,y:1458,w:35,h:24},
-  {x:997,y:1265,w:35,h:25},
-  {x:999,y:1314,w:221,h:20},
-  {x:1024,y:1289,w:34,h:20},
-  {x:1511,y:577,w:262,h:104},
-  {x:1467,y:619,w:48,h:42},
-  {x:1147,y:629,w:170,h:86},
-  {x:1399,y:765,w:50,h:56},
-  {x:1274,y:235,w:110,h:107},
-  {x:1435,y:828,w:38,h:382},
-  {x:1340,y:986,w:98,h:55},
-  {x:1173,y:1051,w:31,h:31},
-  {x:1369,y:1064,w:29,h:20},
-  {x:1489,y:602,w:37,h:31},
-  {x:1316,y:660,w:39,h:30},
-  {x:959,y:287,w:133,h:104},
-  {x:926,y:477,w:33,h:70},
-  {x:1083,y:469,w:43,h:76},
-  {x:288,y:137,w:531,h:91},
-  {x:224,y:714,w:120,h:58},
-  {x:212,y:824,w:139,h:63},
-  {x:171,y:240,w:43,h:530},
-  {x:196,y:169,w:93,h:125},
-  {x:664,y:667,w:191,h:116},
-  {x:699,y:607,w:91,h:59},
-  {x:606,y:660,w:66,h:61},
-  {x:716,y:784,w:104,h:64},
-  {x:692,y:579,w:65,h:56},
-  {x:687,y:753,w:83,h:54},
-  {x:630,y:708,w:56,h:46},
-  {x:768,y:1114,w:58,h:36},
-  {x:73,y:1173,w:140,h:209},
-  {x:72,y:734,w:99,h:141},
-  {x:107,y:853,w:61,h:341},
-  {x:235,y:268,w:36,h:41},
-  {x:260,y:252,w:32,h:33},
-  {x:809,y:300,w:91,h:184},
-  {x:766,y:835,w:20,h:342},
-  {x:640,y:1259,w:38,h:40},
-  {x:612,y:1286,w:37,h:37},
-  {x:820,y:639,w:40,h:48},
-  {x:847,y:666,w:39,h:36},
-  {x:862,y:705,w:46,h:23},
-  {x:948,y:117,w:302,h:87},
-  {x:1121,y:467,w:117,h:84},
-  {x:1395,y:86,w:497,h:146},
-  {x:1561,y:202,w:41,h:100},
-  {x:1651,y:203,w:32,h:89},
-  {x:1738,y:349,w:99,h:32},
-  {x:1739,y:430,w:90,h:28},
-  {x:1732,y:504,w:97,h:29},
-  {x:1740,y:223,w:107,h:57},
-  {x:1748,y:276,w:104,h:38},
-  {x:1577,y:520,w:99,h:37},
-  {x:1395,y:472,w:33,h:53},
-  {x:1641,y:713,w:36,h:90},
-  {x:1737,y:699,w:36,h:107},
-  {x:1692,y:745,w:27,h:20},
-  {x:1631,y:867,w:174,h:317},
-  {x:1450,y:1087,w:104,h:28},
-  {x:1448,y:940,w:106,h:22},
-  {x:1455,y:1003,w:103,h:28},
-  {x:1856,y:934,w:97,h:34},
-  {x:1857,y:1042,w:91,h:36},
-  {x:1857,y:1119,w:97,h:36},
-  {x:1575,y:734,w:34,h:43},
-  {x:1782,y:733,w:106,h:38},
-  {x:1590,y:1261,w:20,h:59},
-  {x:1899,y:871,w:30,h:37},
-  {x:1539,y:730,w:38,h:37},
-  {x:1803,y:1268,w:40,h:34},
-  {x:1871,y:1227,w:46,h:40},
-  {x:1913,y:1172,w:40,h:39},
-  {x:1460,y:1132,w:62,h:39},
-  {x:1527,y:1263,w:44,h:36},
-  {x:1186,y:1131,w:56,h:52},
-  {x:1306,y:1130,w:69,h:30},
-  {x:1379,y:914,w:58,h:77},
-  {x:1142,y:1214,w:77,h:26},
-  {x:1493,y:1312,w:110,h:74},
-  {x:1473,y:1334,w:136,h:54},
-  {x:1452,y:1351,w:138,h:20},
-  {x:1483,y:1360,w:146,h:48},
-  {x:1511,y:1391,w:177,h:36},
-  {x:1445,y:1594,w:49,h:184},
-  {x:1313,y:1506,w:133,h:170},
-  {x:1829,y:1590,w:108,h:252},
-  {x:1373,y:1751,w:157,h:193},
-  {x:1559,y:1394,w:296,h:80},
-  {x:1646,y:1393,w:86,h:128},
-  {x:1843,y:1393,w:84,h:222},
-  {x:1523,y:1358,w:46,h:133},
-  {x:1426,y:1514,w:39,h:172},
-  {x:1336,y:1483,w:67,h:47},
-  {x:983,y:1331,w:242,h:57},
-  {x:1117,y:1353,w:77,h:68},
-  {x:963,y:1490,w:263,h:133},
+  // ─── OUTER WALL RING (octagonal frame) ───
+  // top edge
+  {x:0, y:0, w:2048, h:60},
+  // bottom edge
+  {x:0, y:1990, w:2048, h:60},
+  // left edge
+  {x:0, y:0, w:60, h:2048},
+  // right edge
+  {x:1988, y:0, w:60, h:2048},
+  // top-left corner cut (diagonal — approximated with a small block)
+  {x:60, y:60, w:120, h:120},
+  // top-right corner cut
+  {x:1868, y:60, w:120, h:120},
+  // bottom-left corner cut
+  {x:60, y:1868, w:120, h:120},
+  // bottom-right corner cut
+  {x:1868, y:1868, w:120, h:120},
+
+  // ─── SARAH'S OFFICE (top-left, UNREAD EMAILS room) ───
+  // east wall of office (separates office from balcony area)
+  {x:560, y:80, w:30, h:480},
+  // south wall of office (separates office from central atrium)
+  {x:60, y:560, w:540, h:30},
+  // desk (L-shape along north wall) — coffee cup is on this desk
+  {x:120, y:130, w:280, h:120},
+  // desk chair (don't block, just visual? skip for now — chair is small)
+  // bookshelf along east wall of office
+  {x:430, y:140, w:60, h:240},
+  // reading chair bottom-left corner
+  {x:100, y:300, w:130, h:140},
+  // small bookshelf bottom of office
+  {x:100, y:430, w:130, h:130},
+
+  // ─── BALCONY / WINDOW LOUNGE (top-center) ───
+  // red bench in front of windows
+  {x:670, y:340, w:280, h:60},
+  // big plants flanking the entrance
+  {x:530, y:330, w:90, h:130},
+  {x:960, y:330, w:90, h:130},
+  // black void wall pieces between balcony and atrium (the dark shadow chunks)
+  // left dark wedge
+  {x:560, y:480, w:380, h:170},
+  // right dark wedge
+  {x:1100, y:480, w:330, h:160},
+
+  // ─── TOP-RIGHT LIVING ROOM ───
+  // west wall of living room
+  {x:1450, y:80, w:30, h:480},
+  // south wall
+  {x:1450, y:540, w:480, h:30},
+  // tv stand / cabinet along north wall
+  {x:1500, y:110, w:240, h:80},
+  // L-shaped teal couch
+  {x:1500, y:230, w:80, h:220},
+  {x:1500, y:380, w:280, h:80},
+  // smaller chair / ottoman near south
+  {x:1800, y:380, w:100, h:90},
+  // rug area / coffee table center (small)
+  {x:1660, y:300, w:90, h:60},
+  // balloons / shelf decoration top-right
+  {x:1830, y:90, w:90, h:140},
+
+  // ─── LEFT WORKSPACE (mid-left, multi-monitor desks) ───
+  // north wall of workspace area
+  // (continues from office south wall)
+  // desk cluster — multiple monitors
+  {x:80, y:680, w:340, h:170},
+  // chair under desk
+  {x:140, y:850, w:130, h:130},
+  // papers on floor (not collision — skip)
+  // south wall of workspace
+  {x:60, y:1080, w:540, h:30},
+
+  // ─── CENTRAL ATRIUM OBSTACLES ───
+  // statue on pedestal (top-center)
+  {x:880, y:600, w:90, h:130},
+  // second statue (right of center)
+  {x:1090, y:620, w:80, h:120},
+  // monstera plant (left of statue)
+  {x:680, y:670, w:130, h:130},
+  // plant (lower-left atrium)
+  {x:470, y:880, w:160, h:160},
+  // plant (lower-center)
+  {x:740, y:970, w:120, h:130},
+  // bonsai planter (mid-right atrium)
+  {x:1040, y:910, w:120, h:130},
+  // small planter (right of bonsai)
+  {x:1190, y:910, w:120, h:130},
+  // framed art on wall (right of statue)
+  {x:1280, y:610, w:170, h:90},
+  // glass shelf / display under art
+  {x:1280, y:730, w:170, h:60},
+
+  // ─── CENTRAL LOUNGE (round couch + coffee table) ───
+  // upper curved couch piece
+  {x:780, y:1100, w:340, h:120},
+  // coffee table (round)
+  {x:870, y:1190, w:140, h:90},
+  // chair right of couch
+  {x:1130, y:1140, w:120, h:130},
+  // lower curved couch piece
+  {x:800, y:1300, w:380, h:140},
+
+  // ─── GYM (right side) ───
+  // west wall of gym
+  {x:1410, y:580, w:30, h:680},
+  // north / treadmill row
+  {x:1500, y:620, w:130, h:200},
+  {x:1660, y:620, w:130, h:200},
+  // dumbbell rack along east wall
+  {x:1880, y:600, w:80, h:280},
+  // bench in middle of gym
+  {x:1600, y:880, w:240, h:80},
+  // weight rack / kettlebells
+  {x:1480, y:920, w:80, h:160},
+  // yoga mat (blue, lower-right corner of gym)
+  {x:1850, y:1060, w:90, h:200},
+  // south wall of gym
+  {x:1410, y:1260, w:580, h:30},
+
+  // ─── BOTTOM-LEFT STORAGE / MAIL ROOM ───
+  // north wall
+  {x:80, y:1380, w:520, h:30},
+  // east wall
+  {x:580, y:1380, w:30, h:580},
+  // cubby wall (mailboxes) — north wall of room
+  {x:100, y:1430, w:230, h:160},
+  // chair
+  {x:200, y:1620, w:130, h:110},
+  // stacked boxes (bottom-right of room)
+  {x:340, y:1750, w:240, h:200},
+  // small table / counter
+  {x:120, y:1750, w:170, h:100},
+
+  // ─── BOTTOM-CENTER (ROOF ACCESS area) ───
+  // statues on either side of roof access door
+  {x:760, y:1500, w:90, h:140},
+  {x:1180, y:1500, w:90, h:140},
+  // bonsai (lower-center atrium)
+  {x:700, y:1620, w:120, h:130},
+  // small plant near roof door
+  {x:1130, y:1640, w:90, h:100},
+  // roof access door & frame (the destination — leave a gap for approach)
+  {x:900, y:1700, w:260, h:240},
+  // bench in front of roof access
+  {x:870, y:1900, w:320, h:80},
+
+  // ─── BOTTOM-RIGHT LOUNGE ───
+  // north wall
+  {x:1380, y:1380, w:580, h:30},
+  // west wall
+  {x:1380, y:1380, w:30, h:560},
+  // couch (L-shape along south + east walls)
+  {x:1620, y:1750, w:340, h:120},
+  {x:1820, y:1500, w:140, h:280},
+  // fireplace along east wall
+  {x:1860, y:1390, w:120, h:90},
+  // plants
+  {x:1430, y:1430, w:90, h:120},
+  {x:1430, y:1820, w:90, h:120},
+
+  // ─── DARK WEDGE / VOID OBSTACLES (the black ceiling-overhang chunks) ───
+  // these are scattered around the atrium — they're walls in the art style
+  // upper-left big void (left of balcony, above workspace)
+  {x:280, y:600, w:280, h:120},
+  // upper void between balcony exit and atrium
+  {x:600, y:560, w:120, h:80},
+  // void to the right of balcony exit
+  {x:1050, y:560, w:80, h:60},
+  // mid-left void (top of central area)
+  {x:330, y:1080, w:200, h:60},
+  // mid void left of central couch
+  {x:580, y:1130, w:170, h:80},
+  // mid void right of central couch
+  {x:1260, y:1140, w:140, h:80},
+  // lower void left of roof access
+  {x:600, y:1410, w:160, h:80},
+  // lower void right of roof access
+  {x:1250, y:1410, w:130, h:80},
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
-var LS_KEY = 'pw_collisions_v2';
+// v3 = new map collision set (key bumped to invalidate old map edits)
+var LS_KEY = 'pw_collisions_v3';
 var COLLISIONS = [];
 var LS_OK = true;  // becomes false if localStorage is blocked (e.g. preview sandbox)
 function loadCollisions(){
@@ -260,8 +275,10 @@ function sizeCanvas(){
 }
 
 function placePlayer(){
-  // Spawn in Sarah's office (the room with UNREAD EMAILS, two desks)
-  P.x=1298; P.y=1067;
+  // Spawn next to Sarah's desk (the one with the coffee cup) in the
+  // top-left UNREAD EMAILS office on the new map.
+  // Rough guess — AJ to walk in and dial in final coords from HUD.
+  P.x=330; P.y=340;
   // If that lands inside a wall, spiral outward to find clear ground
   if(!canStand(P.x, P.y)){
     var step = 40;
@@ -299,10 +316,8 @@ var FOOT = { w:54, h:30 };
 // When Sarah's feet (P.x, P.y) land inside any zone, her sprite is hidden
 // (shadow stays visible). Creates a "walking through a doorway" effect.
 // Coords are world-space {x, y, w, h} rectangles.
-var HIDE_ZONES = [
-  // Party-room doorway (bottom-right area)
-  { x:1476, y:1460, w:45, h:45 },
-];
+// Cleared for new map — add back per-doorway after collision is dialed in.
+var HIDE_ZONES = [];
 var LS_FOOT_KEY = 'pw_foot_v1';
 function loadFoot(){
   try{ var s=localStorage.getItem(LS_FOOT_KEY); if(s){ var f=JSON.parse(s); if(f && f.w>0 && f.h>0){ FOOT=f; } } }catch(e){}
