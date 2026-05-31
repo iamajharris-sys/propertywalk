@@ -756,12 +756,18 @@ function showObjectiveBanner(text){
   // touch `transform`, which is used by the slideIn CSS animation. Subtract
   // half the banner's height so it sits centered.
   el.style.top = 'calc(50% - 24px)';
-  // Restart animation by toggling the class
+  // Make sure it's hidden before the 1s delay (in case it was still showing
+  // from a previous call).
   el.classList.remove('show');
-  void el.offsetWidth; // reflow trick to restart CSS animation
-  el.classList.add('show');
-  // Hard hide after the fade animation finishes (~7s total)
-  setTimeout(function(){ el.classList.remove('show'); }, 7200);
+  // 1-second delay before the banner slides in — gives the player a beat to
+  // see where they are before the objective pops up.
+  setTimeout(function(){
+    void el.offsetWidth; // reflow trick to restart CSS animation
+    el.classList.add('show');
+    // Hard hide after the full animation cycle finishes.
+    // CSS animation: 0.5s slide-in, 7s visible, 1s fade = ~8.2s total.
+    setTimeout(function(){ el.classList.remove('show'); }, 8200);
+  }, 1000);
 }
 
 function updateItemCounter(){
@@ -824,7 +830,7 @@ function beginGameplay(){
   spawnZombies();
   startGameplayMusic();
   showItemCounter();
-  showObjectiveBanner();
+  showObjectiveBanner('This is your property! Collect all 5 power items and head to the roof before the nagging tenants corner you...');
 }
 
 function activatePowerMode(){
