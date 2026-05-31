@@ -32,19 +32,6 @@ var PROFILE_ASPECT = 0.78;
 
 var sheet = new Image(); sheet.src = SHEET_URL;
 
-// ── IDLE SMILE SHEET ──────────────────────────────────────────────
-// Used for an occasional facial expression when Sarah stands still.
-// 2048×2048 sheet, 4×4 grid. We only sample cell (row 0, col 2) — the
-// teeth-smile with squinted-happy eyes pose.
-var IDLE_SMILE_SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1be8eeb5cdd3b7b53176c2_Smilingsarah.png';
-var IDLE_SMILE_CELL_W = 512;     // source pixels (2048/4)
-var IDLE_SMILE_CELL_H = 512;
-var IDLE_SMILE_COL = 2;          // 3rd from left
-var IDLE_SMILE_ROW = 0;          // top row
-var IDLE_TRIGGER_MS = 6000;      // ms of standing still before smile fires
-var IDLE_SMILE_DURATION_MS = 1500;  // ms the smile stays on screen
-var idleSmileSheet = new Image(); idleSmileSheet.src = IDLE_SMILE_SHEET_URL;
-
 // ── CELEBRATION SPRITE SHEET ─────────────────────────────────────
 // 3 frames horizontally arranged in a 2048×2048 image. Frame 1 (peak) has
 // Sarah airborne, so her feet are NOT at the same y as frames 0 and 2.
@@ -121,7 +108,7 @@ var canvas, ctx, VW, VH;        // viewport (canvas) size in CSS px
 var ZOOM = 1.1;                 // how zoomed-in the camera is
 var cam = { x:0, y:0 };         // camera top-left in WORLD coords
 
-var P = { x:1024, y:1024, w:72, h:152, facing:'down', moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0, celebrating:false, celebrateStart:0, lastMoveT:0, smileStart:0 };
+var P = { x:1024, y:1024, w:72, h:152, facing:'down', moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0, celebrating:false, celebrateStart:0 };
 
 // ── SPARKLE PARTICLES (celebration flourish) ─────────────────────
 // Particle pool — pushed on celebration start, updated/drawn each frame,
@@ -579,42 +566,6 @@ function drawPlayer(){
   ctx.restore();
 
   var dx = footX - sw/2, dy = footY - sh;
-
-  // ── IDLE SMILE — fires when Sarah stands still for IDLE_TRIGGER_MS,
-  //    only while gameplay is active and only when facing down.
-  if(STATE === 'playing' && !P.moving && P.facing === 'down' && idleSmileSheet.complete && idleSmileSheet.naturalWidth){
-    var now = performance.now();
-    // Start a smile if she's been idle long enough and isn't already smiling
-    if(P.smileStart === 0 && P.lastMoveT > 0 && (now - P.lastMoveT) >= IDLE_TRIGGER_MS){
-      P.smileStart = now;
-    }
-    // If smile is active, draw it (and apply same per-direction scale rules)
-    if(P.smileStart > 0){
-      if(now - P.smileStart >= IDLE_SMILE_DURATION_MS){
-        // Smile over — reset timers so next idle period starts fresh
-        P.smileStart = 0;
-        P.lastMoveT = now;
-      } else {
-        var fSmile = FACING_FRAME.down;
-        var hSc = (fSmile.hScale !== undefined) ? fSmile.hScale : 1.0;
-        var wSc = (fSmile.wScale !== undefined) ? fSmile.wScale : 1.0;
-        var sh3 = sh * hSc, sw3 = sw * wSc;
-        var dx3 = footX - sw3/2, dy3 = footY - sh3;
-        var offX = (fSmile.dx||0) * ZOOM;
-        var offY = (fSmile.dy||0) * ZOOM;
-        ctx.drawImage(
-          idleSmileSheet,
-          IDLE_SMILE_COL * IDLE_SMILE_CELL_W, IDLE_SMILE_ROW * IDLE_SMILE_CELL_H,
-          IDLE_SMILE_CELL_W, IDLE_SMILE_CELL_H,
-          dx3 + offX, dy3 + offY, sw3, sh3
-        );
-        return;
-      }
-    }
-  } else {
-    // She moved or isn't facing down — clear any smile state
-    if(P.smileStart > 0) P.smileStart = 0;
-  }
 
   if(sheet.complete && sheet.naturalWidth){
     // Look up which row and whether to mirror, based on facing direction.
@@ -1366,8 +1317,6 @@ var loop=function(){
     var tryY = Math.max(0,Math.min(WORLD.h, P.y+vy));
     if(canStand(P.x, tryY)) P.y = tryY;
     P.moving=true;
-    P.lastMoveT = performance.now();
-    P.smileStart = 0;   // cancel any active smile when she moves
     P.frT++; if(P.frT>FRAME_TICK){ P.fr=(P.fr+1)%WALK_LEN; P.frT=0; }
   } else { P.moving=false; P.fr=0; }
 
