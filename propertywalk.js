@@ -524,7 +524,14 @@ var menuMusic = new Audio(MENU_MUSIC_URL);
 menuMusic.loop = true;
 menuMusic.volume = 0.6;
 var MUSIC_VOL = 0.6;
-var IS_MUTED = true;            // start muted, user taps to enable
+// Mute state persists across refreshes. Default = muted on first visit;
+// once the user taps unmute, they stay unmuted.
+var LS_MUTE_KEY = 'pw_muted_v1';
+var IS_MUTED = true;
+try {
+  var stored = localStorage.getItem(LS_MUTE_KEY);
+  if(stored === 'false') IS_MUTED = false;
+} catch(e) { /* localStorage blocked — fall back to default muted */ }
 var musicFadeT = null;
 
 function tryPlayMenuMusic(){
@@ -536,6 +543,8 @@ function tryPlayMenuMusic(){
 function toggleMute(e){
   if(e){ e.stopPropagation(); }
   IS_MUTED = !IS_MUTED;
+  // Persist user's choice so it survives refresh
+  try { localStorage.setItem(LS_MUTE_KEY, IS_MUTED ? 'true' : 'false'); } catch(err) {}
   var btn = document.getElementById('mute-btn');
   var iconOn  = document.getElementById('mute-icon-on');
   var iconOff = document.getElementById('mute-icon-off');
@@ -551,6 +560,23 @@ function toggleMute(e){
     menuMusic.volume = MUSIC_VOL;
     var p = menuMusic.play();
     if(p && p.catch){ p.catch(function(){}); }
+    // ── iOS audio unlock for gameplayMusic ──
+    // This tap is a user gesture, so silently play/pause gameplayMusic to
+    // unlock it for later. Otherwise it stays blocked on mobile and won't
+    // play after the cutscene even though menuMusic works fine.
+    try {
+      if(gameplayMusic && gameplayMusic.paused){
+        gameplayMusic.muted = true;
+        var gp = gameplayMusic.play();
+        if(gp && gp.then){
+          gp.then(function(){
+            gameplayMusic.pause();
+            gameplayMusic.currentTime = 0;
+            gameplayMusic.muted = false;
+          }).catch(function(){ gameplayMusic.muted = false; });
+        }
+      }
+    } catch(err) {}
   }
 }
 
@@ -796,6 +822,29 @@ function startGame(){
   // "Start Game" button click → hide menu, kill music, play cutscene.
   // When cutscene ends, beginGameplay() runs.
   STATE = 'cutscene';
+  // ── iOS audio unlock: this click is a user gesture, so any Audio elements
+  //    we touch here become "unlocked" and can be played later without a
+  //    fresh gesture. Touching them here ensures gameplayMusic can play
+  //    after the cutscene on mobile.
+  try {
+    var unlockPromises = [];
+    [menuMusic, gameplayMusic].forEach(function(audio){
+      if(audio && audio.paused){
+        // play/pause cycle unlocks the element on iOS
+        audio.muted = true;
+        var p = audio.play();
+        if(p && p.then){
+          unlockPromises.push(p.then(function(){
+            audio.pause();
+            audio.currentTime = 0;
+            audio.muted = false;
+          }).catch(function(){
+            audio.muted = false;
+          }));
+        }
+      }
+    });
+  } catch(err) { /* ignore unlock errors — fall through to cutscene */ }
   document.getElementById('menu-screen').classList.add('hidden');
   // Hard-stop menu music (not fade — cutscene has its own audio)
   if(menuMusic){ menuMusic.pause(); menuMusic.currentTime = 0; }
@@ -1182,6 +1231,16 @@ window.addEventListener('load',function(){
   loadFoot();
   loadMap();
   placePlayer();
+  // Sync mute button visual state with stored preference (in case the user
+  // previously unmuted — their choice persists across refreshes).
+  if(!IS_MUTED){
+    var btn = document.getElementById('mute-btn');
+    var iconOn  = document.getElementById('mute-icon-on');
+    var iconOff = document.getElementById('mute-icon-off');
+    if(btn) btn.classList.add('unmuted');
+    if(iconOn) iconOn.style.display='block';
+    if(iconOff) iconOff.style.display='none';
+  }
   tryPlayMenuMusic();
   requestAnimationFrame(loop);
 });
