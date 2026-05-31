@@ -805,7 +805,8 @@ Object.keys(ZOMBIE_CHARACTERS).forEach(function(k){
 // Detection is 360° (full circle) within ZOMBIE_DETECT radius — she "senses"
 // Sarah regardless of which way she's facing.
 var ZOMBIE_DETECT = 320;       // world-px detection radius
-var ZOMBIE_CHASE_SPD = 0.7;    // 70% of player speed when chasing
+var ZOMBIE_CHASE_SPD = 0.5;    // 50% of player speed when chasing
+var ZOMBIE_ALERT_MS = 2000;    // ms between detection and chase start
 var ZOMBIE_TOUCH_RADIUS = 70;  // touch distance for game-over
 var ZOMBIES = [];
 
@@ -848,9 +849,10 @@ function spawnZombies(){
       char: charKey,
       x: p.x, y: p.y,
       facing: 'down',        // start facing toward camera (plain front view)
-      state: 'idle',         // 'idle' | 'chase'
+      state: 'idle',         // 'idle' | 'alert' | 'chase'
       fr: 0,                 // walk frame index (0..3)
       frT: 0,                // walk frame tick counter
+      alertStart: 0,         // performance.now() when she entered alert state
     });
   });
 }
@@ -1130,9 +1132,20 @@ function updateZombies(){
     if(z.state === 'chase'){
       // Lose interest if Sarah escapes far beyond detection (hysteresis)
       if(dist > ZOMBIE_DETECT * 1.5) z.state = 'idle';
+    } else if(z.state === 'alert'){
+      // Holding alert pose, facing Sarah. Bail back to idle if Sarah escapes.
+      if(dist > ZOMBIE_DETECT * 1.5){
+        z.state = 'idle';
+      } else if(performance.now() - z.alertStart >= ZOMBIE_ALERT_MS){
+        z.state = 'chase';
+      }
     } else {
-      // Idle: detect Sarah anywhere within radius
-      if(dist <= ZOMBIE_DETECT) z.state = 'chase';
+      // Idle: detect Sarah anywhere within radius → enter alert (turn + pause)
+      if(dist <= ZOMBIE_DETECT){
+        z.state = 'alert';
+        z.alertStart = performance.now();
+        z.facing = dirToFacing(Math.atan2(dy, dx));
+      }
     }
 
     // ── Movement + animation ──
@@ -1167,11 +1180,15 @@ function updateZombies(){
         if(rectOverlap(fbY, COLLISIONS[c])){ blocked = true; break; }
       }
       if(!blocked && tryY >= 50 && tryY <= WORLD.h-50) z.y = tryY;
-    } else {
-      // Idle: stand still, reset to neutral frame (mouth closed, plain face)
+    } else if(z.state === 'alert'){
+      // Frozen in alert pose — face Sarah, mouth closed (frame 0), no movement
+      z.facing = dirToFacing(Math.atan2(dy, dx));
       z.fr = 0;
       z.frT = 0;
-      // Keep current facing — she stays looking the last direction she saw Sarah
+    } else {
+      // Idle: stand still, neutral frame
+      z.fr = 0;
+      z.frT = 0;
     }
 
     // ── TOUCH DETECTION: game over if zombie touches player ──
@@ -1225,8 +1242,8 @@ function drawZombies(){
       ctx.beginPath(); ctx.arc(x, y - sh*0.35, sh*0.18, 0, Math.PI*2); ctx.fill();
     }
 
-    // chase indicator (small ! above their head)
-    if(z.state==='chase'){
+    // chase indicator (small ! above their head) — shown during alert + chase
+    if(z.state === 'chase' || z.state === 'alert'){
       ctx.fillStyle='#CC2200';
       ctx.strokeStyle='#fff'; ctx.lineWidth=3;
       ctx.font='bold '+Math.round(24*ZOOM)+'px Bebas Neue, sans-serif';
