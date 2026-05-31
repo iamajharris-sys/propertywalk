@@ -752,11 +752,10 @@ function showObjectiveBanner(text){
   var el = document.getElementById('obj-banner');
   if(!el) return;
   if(text) document.getElementById('obj-text').textContent = text;
-  // Reposition banner to middle of screen (just below center, where Sarah
-  // appears on spawn). Overrides whatever top/transform the CSS specifies.
-  el.style.top = '55%';
-  el.style.left = '50%';
-  el.style.transform = 'translate(-50%, -50%)';
+  // Reposition banner vertically to middle of screen. Use `top` only — don't
+  // touch `transform`, which is used by the slideIn CSS animation. Subtract
+  // half the banner's height so it sits centered.
+  el.style.top = 'calc(50% - 24px)';
   // Restart animation by toggling the class
   el.classList.remove('show');
   void el.offsetWidth; // reflow trick to restart CSS animation
