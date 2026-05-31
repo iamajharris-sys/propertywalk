@@ -792,7 +792,7 @@ var ZOMBIE_CHARACTERS = {
     // the cells that face the right direction. Format: [row, col].
     frameMap:{
       down:  [[0,0],[0,1],[0,2],[0,3]],
-      left:  [[1,0],[1,2]],
+      left:  [[1,0],[2,3],[1,0]],
       right: [[2,0],[2,1],[2,2]],
       up:    [[3,0],[3,1],[3,2],[3,3]],
     },
