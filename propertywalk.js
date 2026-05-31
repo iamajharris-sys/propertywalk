@@ -37,187 +37,83 @@ var mapImg = new Image(); var mapReady=false, mapFailed=false;
 var WORLD = { w: 2048, h: 2048 };
 
 // ── COLLISION BOXES (world-pixel coords for the 2048x2048 New Map) ──
-// First-pass rough boxes — AJ to refine in edit mode.
+// Baked from AJ's edit-mode tuning pass.
 var COLLISION_DEFAULTS = [
-  // ─── OUTER WALL RING (octagonal frame) ───
-  // top edge
-  {x:0, y:0, w:2048, h:60},
-  // bottom edge
-  {x:0, y:1990, w:2048, h:60},
-  // left edge
-  {x:0, y:0, w:60, h:2048},
-  // right edge
-  {x:1988, y:0, w:60, h:2048},
-  // top-left corner cut (diagonal — approximated with a small block)
-  {x:60, y:60, w:120, h:120},
-  // top-right corner cut
-  {x:1868, y:60, w:120, h:120},
-  // bottom-left corner cut
-  {x:60, y:1868, w:120, h:120},
-  // bottom-right corner cut
-  {x:1868, y:1868, w:120, h:120},
-
-  // ─── SARAH'S OFFICE (top-left, UNREAD EMAILS room) ───
-  // east wall of office (separates office from balcony area)
-  {x:560, y:80, w:30, h:480},
-  // south wall of office (separates office from central atrium)
-  {x:60, y:560, w:540, h:30},
-  // desk (L-shape along north wall) — coffee cup is on this desk
-  {x:120, y:130, w:280, h:120},
-  // desk chair (don't block, just visual? skip for now — chair is small)
-  // bookshelf along east wall of office
-  {x:430, y:140, w:60, h:240},
-  // reading chair bottom-left corner
-  {x:100, y:300, w:130, h:140},
-  // small bookshelf bottom of office
-  {x:100, y:430, w:130, h:130},
-
-  // ─── BALCONY / WINDOW LOUNGE (top-center) ───
-  // red bench in front of windows
-  {x:670, y:340, w:280, h:60},
-  // big plants flanking the entrance
-  {x:530, y:330, w:90, h:130},
-  {x:960, y:330, w:90, h:130},
-  // black void wall pieces between balcony and atrium (the dark shadow chunks)
-  // left dark wedge
-  {x:560, y:480, w:380, h:170},
-  // right dark wedge
-  {x:1100, y:480, w:330, h:160},
-
-  // ─── TOP-RIGHT LIVING ROOM ───
-  // west wall of living room
-  {x:1450, y:80, w:30, h:480},
-  // south wall
-  {x:1450, y:540, w:480, h:30},
-  // tv stand / cabinet along north wall
-  {x:1500, y:110, w:240, h:80},
-  // L-shaped teal couch
-  {x:1500, y:230, w:80, h:220},
-  {x:1500, y:380, w:280, h:80},
-  // smaller chair / ottoman near south
-  {x:1800, y:380, w:100, h:90},
-  // rug area / coffee table center (small)
-  {x:1660, y:300, w:90, h:60},
-  // balloons / shelf decoration top-right
-  {x:1830, y:90, w:90, h:140},
-
-  // ─── LEFT WORKSPACE (mid-left, multi-monitor desks) ───
-  // north wall of workspace area
-  // (continues from office south wall)
-  // desk cluster — multiple monitors
-  {x:80, y:680, w:340, h:170},
-  // chair under desk
-  {x:140, y:850, w:130, h:130},
-  // papers on floor (not collision — skip)
-  // south wall of workspace
-  {x:60, y:1080, w:540, h:30},
-
-  // ─── CENTRAL ATRIUM OBSTACLES ───
-  // statue on pedestal (top-center)
-  {x:880, y:600, w:90, h:130},
-  // second statue (right of center)
-  {x:1090, y:620, w:80, h:120},
-  // monstera plant (left of statue)
-  {x:680, y:670, w:130, h:130},
-  // plant (lower-left atrium)
-  {x:470, y:880, w:160, h:160},
-  // plant (lower-center)
-  {x:740, y:970, w:120, h:130},
-  // bonsai planter (mid-right atrium)
-  {x:1040, y:910, w:120, h:130},
-  // small planter (right of bonsai)
-  {x:1190, y:910, w:120, h:130},
-  // framed art on wall (right of statue)
-  {x:1280, y:610, w:170, h:90},
-  // glass shelf / display under art
-  {x:1280, y:730, w:170, h:60},
-
-  // ─── CENTRAL LOUNGE (round couch + coffee table) ───
-  // upper curved couch piece
-  {x:780, y:1100, w:340, h:120},
-  // coffee table (round)
-  {x:870, y:1190, w:140, h:90},
-  // chair right of couch
-  {x:1130, y:1140, w:120, h:130},
-  // lower curved couch piece
-  {x:800, y:1300, w:380, h:140},
-
-  // ─── GYM (right side) ───
-  // west wall of gym
-  {x:1410, y:580, w:30, h:680},
-  // north / treadmill row
-  {x:1500, y:620, w:130, h:200},
-  {x:1660, y:620, w:130, h:200},
-  // dumbbell rack along east wall
-  {x:1880, y:600, w:80, h:280},
-  // bench in middle of gym
-  {x:1600, y:880, w:240, h:80},
-  // weight rack / kettlebells
-  {x:1480, y:920, w:80, h:160},
-  // yoga mat (blue, lower-right corner of gym)
-  {x:1850, y:1060, w:90, h:200},
-  // south wall of gym
-  {x:1410, y:1260, w:580, h:30},
-
-  // ─── BOTTOM-LEFT STORAGE / MAIL ROOM ───
-  // north wall
-  {x:80, y:1380, w:520, h:30},
-  // east wall
-  {x:580, y:1380, w:30, h:580},
-  // cubby wall (mailboxes) — north wall of room
-  {x:100, y:1430, w:230, h:160},
-  // chair
-  {x:200, y:1620, w:130, h:110},
-  // stacked boxes (bottom-right of room)
-  {x:340, y:1750, w:240, h:200},
-  // small table / counter
-  {x:120, y:1750, w:170, h:100},
-
-  // ─── BOTTOM-CENTER (ROOF ACCESS area) ───
-  // statues on either side of roof access door
-  {x:760, y:1500, w:90, h:140},
-  {x:1180, y:1500, w:90, h:140},
-  // bonsai (lower-center atrium)
-  {x:700, y:1620, w:120, h:130},
-  // small plant near roof door
-  {x:1130, y:1640, w:90, h:100},
-  // roof access door & frame (the destination — leave a gap for approach)
-  {x:900, y:1700, w:260, h:240},
-  // bench in front of roof access
-  {x:870, y:1900, w:320, h:80},
-
-  // ─── BOTTOM-RIGHT LOUNGE ───
-  // north wall
-  {x:1380, y:1380, w:580, h:30},
-  // west wall
-  {x:1380, y:1380, w:30, h:560},
-  // couch (L-shape along south + east walls)
-  {x:1620, y:1750, w:340, h:120},
-  {x:1820, y:1500, w:140, h:280},
-  // fireplace along east wall
-  {x:1860, y:1390, w:120, h:90},
-  // plants
-  {x:1430, y:1430, w:90, h:120},
-  {x:1430, y:1820, w:90, h:120},
-
-  // ─── DARK WEDGE / VOID OBSTACLES (the black ceiling-overhang chunks) ───
-  // these are scattered around the atrium — they're walls in the art style
-  // upper-left big void (left of balcony, above workspace)
-  {x:280, y:600, w:280, h:120},
-  // upper void between balcony exit and atrium
-  {x:600, y:560, w:120, h:80},
-  // void to the right of balcony exit
-  {x:1050, y:560, w:80, h:60},
-  // mid-left void (top of central area)
-  {x:330, y:1080, w:200, h:60},
-  // mid void left of central couch
-  {x:580, y:1130, w:170, h:80},
-  // mid void right of central couch
-  {x:1260, y:1140, w:140, h:80},
-  // lower void left of roof access
-  {x:600, y:1410, w:160, h:80},
-  // lower void right of roof access
-  {x:1250, y:1410, w:130, h:80},
+  {x:0,y:0,w:2048,h:60},
+  {x:0,y:1990,w:2048,h:60},
+  {x:0,y:0,w:60,h:2048},
+  {x:1988,y:0,w:60,h:2048},
+  {x:60,y:60,w:120,h:120},
+  {x:1868,y:60,w:120,h:120},
+  {x:60,y:1868,w:120,h:120},
+  {x:1868,y:1868,w:120,h:120},
+  {x:754,y:245,w:54,h:203},
+  {x:120,y:130,w:280,h:120},
+  {x:441,y:236,w:60,h:109},
+  {x:100,y:300,w:130,h:140},
+  {x:100,y:465,w:195,h:95},
+  {x:670,y:340,w:280,h:60},
+  {x:598,y:604,w:189,h:130},
+  {x:960,y:330,w:90,h:130},
+  {x:1100,y:480,w:330,h:160},
+  {x:1450,y:80,w:30,h:480},
+  {x:1450,y:540,w:480,h:30},
+  {x:1500,y:110,w:240,h:80},
+  {x:1500,y:230,w:80,h:220},
+  {x:1500,y:380,w:280,h:80},
+  {x:1800,y:380,w:100,h:90},
+  {x:1660,y:300,w:90,h:60},
+  {x:1830,y:90,w:90,h:140},
+  {x:80,y:613,w:287,h:237},
+  {x:140,y:850,w:130,h:130},
+  {x:60,y:1080,w:540,h:30},
+  {x:880,y:600,w:90,h:130},
+  {x:1090,y:620,w:80,h:120},
+  {x:680,y:670,w:130,h:130},
+  {x:470,y:880,w:160,h:160},
+  {x:740,y:970,w:120,h:130},
+  {x:1040,y:910,w:120,h:130},
+  {x:1190,y:910,w:120,h:130},
+  {x:1280,y:610,w:170,h:90},
+  {x:1280,y:730,w:170,h:60},
+  {x:780,y:1100,w:340,h:120},
+  {x:870,y:1190,w:140,h:90},
+  {x:1130,y:1140,w:120,h:130},
+  {x:800,y:1300,w:380,h:140},
+  {x:1410,y:580,w:30,h:680},
+  {x:1500,y:620,w:130,h:200},
+  {x:1660,y:620,w:130,h:200},
+  {x:1880,y:600,w:80,h:280},
+  {x:1600,y:880,w:240,h:80},
+  {x:1480,y:920,w:80,h:160},
+  {x:1850,y:1060,w:90,h:200},
+  {x:1410,y:1260,w:580,h:30},
+  {x:80,y:1380,w:520,h:30},
+  {x:580,y:1380,w:30,h:580},
+  {x:100,y:1430,w:230,h:160},
+  {x:200,y:1620,w:130,h:110},
+  {x:340,y:1750,w:240,h:200},
+  {x:120,y:1750,w:170,h:100},
+  {x:760,y:1500,w:90,h:140},
+  {x:1180,y:1500,w:90,h:140},
+  {x:700,y:1620,w:120,h:130},
+  {x:1130,y:1640,w:90,h:100},
+  {x:900,y:1700,w:260,h:240},
+  {x:870,y:1900,w:320,h:80},
+  {x:1380,y:1380,w:580,h:30},
+  {x:1380,y:1380,w:30,h:560},
+  {x:1620,y:1750,w:340,h:120},
+  {x:1820,y:1500,w:140,h:280},
+  {x:1860,y:1390,w:120,h:90},
+  {x:1430,y:1430,w:90,h:120},
+  {x:1430,y:1820,w:90,h:120},
+  {x:593,y:541,w:151,h:120},
+  {x:1050,y:560,w:80,h:60},
+  {x:330,y:1080,w:200,h:60},
+  {x:580,y:1130,w:170,h:80},
+  {x:1260,y:1140,w:140,h:80},
+  {x:600,y:1410,w:160,h:80},
+  {x:1250,y:1410,w:130,h:80},
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
@@ -262,7 +158,7 @@ var canvas, ctx, VW, VH;        // viewport (canvas) size in CSS px
 var ZOOM = 1.1;                 // how zoomed-in the camera is
 var cam = { x:0, y:0 };         // camera top-left in WORLD coords
 
-var P = { x:1024, y:1024, w:72, h:120, facing:'down', moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0 };
+var P = { x:1024, y:1024, w:72, h:132, facing:'down', moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0 };
 var K = { up:false, down:false, left:false, right:false };
 var JOY = { active:false, vx:0, vy:0, id:null, bx:0, by:0 };
 
@@ -1099,8 +995,8 @@ function drawZombies(){
   for(var i=0; i<ZOMBIES.length; i++){
     var z = ZOMBIES[i];
     var x = w2sX(z.x), y = w2sY(z.y);
-    // Zombie sprite size in world units
-    var spriteH = 150, spriteW = spriteH*0.78;  // similar proportions to Sarah
+    // Zombie sprite size in world units (10% bigger to match Sarah's scale)
+    var spriteH = 165, spriteW = spriteH*0.78;  // similar proportions to Sarah
     var sw = spriteW*ZOOM, sh = spriteH*ZOOM;
 
     // shadow on the ground (anchored at z.y, the zombie's feet)
