@@ -961,23 +961,39 @@ function drawItems(){
     ctx.fill();
     // Item floats above the shadow
     var drawY = screenY + bob*ZOOM;
-    var size = 56 * ZOOM;
+    var size = 62 * ZOOM;
 
-    // ── Pulsing radial glow behind the item ──
-    // Opacity breathes with the bob — brightest at peak (bob=-12, item high),
-    // dimmest at trough. Color tinted to the item's vibe.
-    // Drawn BEFORE the icon so it sits behind it.
+    // ── Mario-esque pulsing glow behind the item ──
+    // Two-layer halo: outer soft glow + inner hot center. Both pulse with
+    // the bob — brightest at peak, dimmer at trough. Always-on so items
+    // are easy to spot even at glow's lowest point.
     var glowPhase = (Math.sin(it.bobT) + 1) / 2;  // 0..1 cycle synced to bob
-    var glowAlpha = 0.25 + glowPhase * 0.45;       // breathes 0.25 → 0.70
-    var glowRadius = size * (0.85 + glowPhase * 0.25);  // gently expands too
     var glowColor = ITEM_COLORS[it.id] || '#F5A623';
-    var grad = ctx.createRadialGradient(screenX, drawY-size/2, 0, screenX, drawY-size/2, glowRadius);
-    grad.addColorStop(0,    hexToRgba(glowColor, glowAlpha));
-    grad.addColorStop(0.5,  hexToRgba(glowColor, glowAlpha*0.4));
-    grad.addColorStop(1,    hexToRgba(glowColor, 0));
-    ctx.fillStyle = grad;
+    var glowCenterX = screenX;
+    var glowCenterY = drawY - size/2;
+
+    // OUTER halo — bigger, softer, breathes wide
+    var outerAlpha = 0.50 + glowPhase * 0.45;       // 0.50 → 0.95
+    var outerRadius = size * (1.0 + glowPhase * 0.35);
+    var outerGrad = ctx.createRadialGradient(glowCenterX, glowCenterY, 0, glowCenterX, glowCenterY, outerRadius);
+    outerGrad.addColorStop(0,    hexToRgba(glowColor, outerAlpha * 0.7));
+    outerGrad.addColorStop(0.45, hexToRgba(glowColor, outerAlpha * 0.35));
+    outerGrad.addColorStop(1,    hexToRgba(glowColor, 0));
+    ctx.fillStyle = outerGrad;
     ctx.beginPath();
-    ctx.arc(screenX, drawY-size/2, glowRadius, 0, Math.PI*2);
+    ctx.arc(glowCenterX, glowCenterY, outerRadius, 0, Math.PI*2);
+    ctx.fill();
+
+    // INNER hot center — smaller, brighter, gives a "lit-up" core
+    var innerAlpha = 0.6 + glowPhase * 0.4;          // 0.6 → 1.0
+    var innerRadius = size * 0.55;
+    var innerGrad = ctx.createRadialGradient(glowCenterX, glowCenterY, 0, glowCenterX, glowCenterY, innerRadius);
+    innerGrad.addColorStop(0,    hexToRgba(glowColor, innerAlpha));
+    innerGrad.addColorStop(0.6,  hexToRgba(glowColor, innerAlpha * 0.4));
+    innerGrad.addColorStop(1,    hexToRgba(glowColor, 0));
+    ctx.fillStyle = innerGrad;
+    ctx.beginPath();
+    ctx.arc(glowCenterX, glowCenterY, innerRadius, 0, Math.PI*2);
     ctx.fill();
 
     if(itemsSheet.complete && itemsSheet.naturalWidth){
