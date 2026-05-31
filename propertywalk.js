@@ -752,22 +752,22 @@ function showObjectiveBanner(text){
   var el = document.getElementById('obj-banner');
   if(!el) return;
   if(text) document.getElementById('obj-text').textContent = text;
-  // Reposition banner vertically to middle of screen. Use `top` only — don't
-  // touch `transform`, which is used by the slideIn CSS animation. Subtract
-  // half the banner's height so it sits centered.
-  el.style.top = 'calc(50% - 24px)';
-  // Make sure it's hidden before the 1s delay (in case it was still showing
+  // Reposition banner vertically — sits just below screen center, comfortably
+  // beneath Sarah's feet on spawn. Use `top` only — don't touch `transform`,
+  // which is used by the slideIn CSS animation.
+  el.style.top = 'calc(50% + 36px)';
+  // Make sure it's hidden before the 3s delay (in case it was still showing
   // from a previous call).
   el.classList.remove('show');
-  // 1-second delay before the banner slides in — gives the player a beat to
-  // see where they are before the objective pops up.
+  // 3-second delay before the banner slides in — gives the player time to
+  // settle in and see where they are before the objective pops up.
   setTimeout(function(){
     void el.offsetWidth; // reflow trick to restart CSS animation
     el.classList.add('show');
     // Hard hide after the full animation cycle finishes.
     // CSS animation: 0.5s slide-in, 7s visible, 1s fade = ~8.2s total.
     setTimeout(function(){ el.classList.remove('show'); }, 8200);
-  }, 1000);
+  }, 3000);
 }
 
 function updateItemCounter(){
