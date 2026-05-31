@@ -158,7 +158,7 @@ var canvas, ctx, VW, VH;        // viewport (canvas) size in CSS px
 var ZOOM = 1.1;                 // how zoomed-in the camera is
 var cam = { x:0, y:0 };         // camera top-left in WORLD coords
 
-var P = { x:1024, y:1024, w:72, h:132, facing:'down', moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0 };
+var P = { x:1024, y:1024, w:72, h:152, facing:'down', moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0 };
 var K = { up:false, down:false, left:false, right:false };
 var JOY = { active:false, vx:0, vy:0, id:null, bx:0, by:0 };
 
@@ -228,10 +228,19 @@ function canStand(x,y){
 }
 
 function drawWorld(){
+  // Paint full canvas black first — anything outside the map's world bounds
+  // (e.g. when zoomed out or camera clamped at edges) renders black instead
+  // of whatever the canvas default background is.
+  ctx.fillStyle='#000';
+  ctx.fillRect(0, 0, VW, VH);
+
   if(mapReady){
-    // draw the visible slice of the map, scaled by zoom
+    // Map the world rect (0,0)..(WORLD.w, WORLD.h) into screen space.
+    // The black fill above remains visible anywhere outside this rect.
     ctx.imageSmoothingEnabled=true;
-    ctx.drawImage(mapImg, cam.x, cam.y, VW/ZOOM, VH/ZOOM, 0, 0, VW, VH);
+    var sx = w2sX(0), sy = w2sY(0);
+    var sw = WORLD.w * ZOOM, sh = WORLD.h * ZOOM;
+    ctx.drawImage(mapImg, 0, 0, mapImg.naturalWidth, mapImg.naturalHeight, sx, sy, sw, sh);
   } else {
     // placeholder: checker/grid world so camera motion is visible
     ctx.fillStyle='#e9ecf1'; ctx.fillRect(0,0,VW,VH);
@@ -995,8 +1004,8 @@ function drawZombies(){
   for(var i=0; i<ZOMBIES.length; i++){
     var z = ZOMBIES[i];
     var x = w2sX(z.x), y = w2sY(z.y);
-    // Zombie sprite size in world units (10% bigger to match Sarah's scale)
-    var spriteH = 165, spriteW = spriteH*0.78;  // similar proportions to Sarah
+    // Zombie sprite size in world units (scaled to match Sarah)
+    var spriteH = 190, spriteW = spriteH*0.78;  // similar proportions to Sarah
     var sw = spriteW*ZOOM, sh = spriteH*ZOOM;
 
     // shadow on the ground (anchored at z.y, the zombie's feet)
