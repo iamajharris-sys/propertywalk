@@ -785,7 +785,7 @@ var ZOMBIE_CHARACTERS = {
   // mirrorDir: 'none' | 'left' | 'right' — workaround for sheets where one of
   // the side rows is unreliable. The opposite row is mirrored to fill the
   // bad row. e.g. mirrorDir='left' means use right row mirrored for left.
-  grumpy:     { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c90f365d062b2a6e7ee6d_Grumpy_guywalking.png', name:'Grumpy',     enabled:true,  mirrorDir:'left',  chaseSpeed:0.4, rows:{down:0, right:2, left:1, up:3} },
+  grumpy:     { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c90f365d062b2a6e7ee6d_Grumpy_guywalking.png', name:'Grumpy',     enabled:true,  mirrorDir:'none', chaseSpeed:0.4 },
   karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen',      enabled:false, mirrorDir:'none',  chaseSpeed:0.5 },
   complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true,  mirrorDir:'left',  chaseSpeed:0.5 },
   talkative:  { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c93206b8fa6046c5ee76e_Talkative%20guy.png',  name:'Talkative',  enabled:true,  mirrorDir:'left',  chaseSpeed:0.6, rows:{down:0, right:1, left:2, up:3} },
@@ -911,7 +911,7 @@ function showObjectiveBanner(text){
   // Make sure it's hidden before the 3s delay (in case it was still showing
   // from a previous call).
   el.classList.remove('show');
-  // 2-second delay before the banner slides in — gives the player a beat
+  // 1.5-second delay before the banner slides in — gives the player a beat
   // to settle in before the objective pops up.
   setTimeout(function(){
     void el.offsetWidth; // reflow trick to restart CSS animation
@@ -919,7 +919,7 @@ function showObjectiveBanner(text){
     // Hard hide after the full animation cycle finishes.
     // CSS animation: 0.5s slide-in, 7s visible, 1s fade = ~8.2s total.
     setTimeout(function(){ el.classList.remove('show'); }, 8200);
-  }, 2000);
+  }, 1500);
 }
 
 function updateItemCounter(){
