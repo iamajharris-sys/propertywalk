@@ -782,11 +782,13 @@ var VICTORY = false;
 var ZOMBIES_ENABLED = true;
 
 var ZOMBIE_CHARACTERS = {
-  grumpy:     { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a7444c5deaf6ef798a00_Grumpy_man.png',      name:'Grumpy',     enabled:false, mirrorLeft:false },
-  karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen',      enabled:false, mirrorLeft:false },
-  // mirrorLeft: complainer's "left" row in the source art is mostly right-facing,
-  // so we mirror the right row for left direction to keep her facing correct.
-  complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true,  mirrorLeft:true  },
+  // mirrorDir: 'none' | 'left' | 'right' — workaround for sheets where one of
+  // the side rows is unreliable. The opposite row is mirrored to fill the
+  // bad row. e.g. mirrorDir='left' means use right row mirrored for left.
+  grumpy:     { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c90f365d062b2a6e7ee6d_Grumpy_guywalking.png', name:'Grumpy',     enabled:true,  mirrorDir:'none',  chaseSpeed:0.4 },
+  karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen',      enabled:false, mirrorDir:'none',  chaseSpeed:0.5 },
+  complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true,  mirrorDir:'left',  chaseSpeed:0.5 },
+  talkative:  { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c93206b8fa6046c5ee76e_Talkative%20guy.png',  name:'Talkative',  enabled:true,  mirrorDir:'right', chaseSpeed:0.6 },
 };
 // 4×4 sprite sheet layout — each direction is a row, each row has 4 walk frames.
 //   ROW 0: facing DOWN   (4-frame walk cycle)
@@ -1158,7 +1160,9 @@ function updateZombies(){
 
     // ── Movement + animation ──
     if(z.state === 'chase'){
-      var spd = P.spd * ZOMBIE_CHASE_SPD;
+      var charDef = ZOMBIE_CHARACTERS[z.char];
+      var chaseMul = (charDef && charDef.chaseSpeed !== undefined) ? charDef.chaseSpeed : ZOMBIE_CHASE_SPD;
+      var spd = P.spd * chaseMul;
       var moveX = 0, moveY = 0;
       if(dist > 0){
         moveX = (dx/dist) * spd;
@@ -1228,10 +1232,15 @@ function drawZombies(){
     if(img && img.complete && img.naturalWidth){
       var cellW = img.naturalWidth / ZOMBIE_SHEET_COLS;
       var cellH = img.naturalHeight / ZOMBIE_SHEET_ROWS;
-      // Per-character mirrorLeft flag: if true, mirror the right row for left
-      // direction (workaround for sprite sheets where the left row is unreliable).
-      var useMirror = (z.facing === 'left') && charDef && charDef.mirrorLeft;
-      var rowKey = useMirror ? 'right' : z.facing;
+      // Per-character mirrorDir: if set to 'left' or 'right', that side's row
+      // is replaced by mirroring the opposite row. Workaround for sheets
+      // where one side row was drawn unreliably.
+      var mirrorDir = charDef && charDef.mirrorDir;
+      var useMirror = (mirrorDir === z.facing);  // true if this facing is the "bad" side
+      var rowKey = z.facing;
+      if(useMirror){
+        rowKey = (z.facing === 'left') ? 'right' : 'left';
+      }
       var row = (ZOMBIE_ROW[rowKey] !== undefined) ? ZOMBIE_ROW[rowKey] : ZOMBIE_ROW.down;
       var col = (z.state === 'chase') ? (z.fr % ZOMBIE_WALK_LEN) : 0;
       if(useMirror){
