@@ -52,11 +52,10 @@ var COLLISION_DEFAULTS = [
   {x:441,y:236,w:60,h:109},
   {x:100,y:300,w:130,h:140},
   {x:100,y:465,w:195,h:95},
-  {x:670,y:340,w:280,h:60},
+  {x:1483,y:1400,w:280,h:60},
   {x:598,y:604,w:189,h:130},
-  {x:960,y:330,w:90,h:130},
-  {x:1100,y:480,w:330,h:160},
-  {x:1450,y:80,w:30,h:480},
+  {x:800,y:317,w:477,h:150},
+  {x:1380,y:130,w:50,h:427},
   {x:1450,y:540,w:480,h:30},
   {x:1500,y:110,w:240,h:80},
   {x:1500,y:230,w:80,h:220},
@@ -65,27 +64,26 @@ var COLLISION_DEFAULTS = [
   {x:1660,y:300,w:90,h:60},
   {x:1830,y:90,w:90,h:140},
   {x:80,y:613,w:287,h:237},
-  {x:140,y:850,w:130,h:130},
+  {x:93,y:970,w:340,h:130},
   {x:60,y:1080,w:540,h:30},
-  {x:880,y:600,w:90,h:130},
-  {x:1090,y:620,w:80,h:120},
+  {x:737,y:687,w:137,h:113},
+  {x:1170,y:630,w:157,h:93},
   {x:680,y:670,w:130,h:130},
-  {x:470,y:880,w:160,h:160},
-  {x:740,y:970,w:120,h:130},
-  {x:1040,y:910,w:120,h:130},
+  {x:617,y:733,w:203,h:130},
+  {x:993,y:830,w:63,h:217},
   {x:1190,y:910,w:120,h:130},
-  {x:1280,y:610,w:170,h:90},
+  {x:1470,y:620,w:170,h:90},
   {x:1280,y:730,w:170,h:60},
-  {x:780,y:1100,w:340,h:120},
-  {x:870,y:1190,w:140,h:90},
+  {x:837,y:1090,w:67,h:120},
+  {x:447,y:803,w:140,h:90},
   {x:1130,y:1140,w:120,h:130},
-  {x:800,y:1300,w:380,h:140},
+  {x:910,y:1243,w:130,h:83},
   {x:1410,y:580,w:30,h:680},
   {x:1500,y:620,w:130,h:200},
   {x:1660,y:620,w:130,h:200},
   {x:1880,y:600,w:80,h:280},
   {x:1600,y:880,w:240,h:80},
-  {x:1480,y:920,w:80,h:160},
+  {x:1473,y:1010,w:80,h:160},
   {x:1850,y:1060,w:90,h:200},
   {x:1410,y:1260,w:580,h:30},
   {x:80,y:1380,w:520,h:30},
@@ -108,12 +106,13 @@ var COLLISION_DEFAULTS = [
   {x:1430,y:1430,w:90,h:120},
   {x:1430,y:1820,w:90,h:120},
   {x:593,y:541,w:151,h:120},
-  {x:1050,y:560,w:80,h:60},
   {x:330,y:1080,w:200,h:60},
   {x:580,y:1130,w:170,h:80},
   {x:1260,y:1140,w:140,h:80},
   {x:600,y:1410,w:160,h:80},
   {x:1250,y:1410,w:130,h:80},
+  {x:796,y:483,w:33,h:24},
+  {x:729,y:537,w:20,h:28},
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
@@ -560,22 +559,23 @@ function toggleMute(e){
     menuMusic.volume = MUSIC_VOL;
     var p = menuMusic.play();
     if(p && p.catch){ p.catch(function(){}); }
-    // ── iOS audio unlock for gameplayMusic ──
-    // This tap is a user gesture, so silently play/pause gameplayMusic to
-    // unlock it for later. Otherwise it stays blocked on mobile and won't
-    // play after the cutscene even though menuMusic works fine.
+    // ── iOS audio unlock for gameplayMusic + pickupSfx ──
+    // This tap is a user gesture, so silently play/pause both to unlock
+    // them for later. Otherwise they stay blocked on mobile.
     try {
-      if(gameplayMusic && gameplayMusic.paused){
-        gameplayMusic.muted = true;
-        var gp = gameplayMusic.play();
-        if(gp && gp.then){
-          gp.then(function(){
-            gameplayMusic.pause();
-            gameplayMusic.currentTime = 0;
-            gameplayMusic.muted = false;
-          }).catch(function(){ gameplayMusic.muted = false; });
+      [gameplayMusic, pickupSfx].forEach(function(audio){
+        if(audio && audio.paused){
+          audio.muted = true;
+          var gp = audio.play();
+          if(gp && gp.then){
+            gp.then(function(){
+              audio.pause();
+              audio.currentTime = 0;
+              audio.muted = false;
+            }).catch(function(){ audio.muted = false; });
+          }
         }
-      }
+      });
     } catch(err) {}
   }
 }
@@ -631,33 +631,65 @@ function stopGameplayMusic(){
   }, 60);
 }
 
+// ── PICKUP SFX ────────────────────────────────────────────────────
+// Plays when Sarah collects an item. Respects mute. Supports overlap on
+// rapid pickups by cloning the audio element each play so two SFX can
+// layer on top of each other.
+var PICKUP_SFX_URL = 'https://cdn.jsdelivr.net/gh/iamajharris-sys/propertywalk@main/magical_1.ogg';
+var pickupSfx = new Audio(PICKUP_SFX_URL);
+pickupSfx.volume = 0.7;
+pickupSfx.preload = 'auto';
+
+function playPickupSfx(){
+  if(IS_MUTED) return;
+  try {
+    // Clone the element so this play doesn't interrupt any earlier ones
+    // that are still ringing out.
+    var clone = pickupSfx.cloneNode();
+    clone.volume = 0.7;
+    var p = clone.play();
+    if(p && p.catch){ p.catch(function(){}); }
+  } catch(err) { /* silently ignore — pickup still works without sound */ }
+}
+
 // ──────────────────────────────────────────────────────────────────
 // GAME STATE MACHINE
 // ──────────────────────────────────────────────────────────────────
 var STATE = 'menu';   // 'menu' | 'playing' (more states later: 'won','lost')
 
-// Power-item sprite sheet — single image with 5 items in a row.
-// We use 3 of them by their column index: present(2), phone(3), key(4).
-var ITEMS_SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17aa21c4c836a09c426dbb_Task_icons.png';
-var ITEMS_SHEET_COLS = 5;
-var ITEM_CELL = {       // which column of the sheet each item uses
-  key:     4,
-  phone:   3,
-  present: 2,
+// Power-item sprite sheet — 3×3 grid layout with 5 items (some cells empty,
+// some duplicates ignored — we pick the cells we want via ITEM_CELL).
+var ITEMS_SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1baebe5999bd42268ad97e_A_51_sprite_sheet_of_power-up__Nano_Banana_2_34254-removebg.png';
+var ITEMS_SHEET_COLS = 3;
+var ITEMS_SHEET_ROWS = 3;
+// Each item maps to {c, r} (column, row) in the 3×3 grid.
+//   ROW 0:  [key]      [phone]    [coffee A — unused]
+//   ROW 1:  [coffee B] [cash A — unused] [cash B]
+//   ROW 2:  [empty]    [empty]    [package]
+var ITEM_CELL = {
+  key:     {c:0, r:0},
+  phone:   {c:1, r:0},
+  coffee:  {c:0, r:1},
+  cash:    {c:2, r:1},
+  package: {c:2, r:2},
 };
-var ITEM_COLORS = { key:'#F5A623', phone:'#CC2200', present:'#D2691E' };
-var ITEM_EMOJI  = { key:'🔑', phone:'📞', present:'🎁' };
+var ITEM_COLORS = {
+  key:     '#F5C518',  // gold
+  phone:   '#29ABE2',  // sky blue (matches phone screen)
+  coffee:  '#8B5A2B',  // coffee brown
+  cash:    '#7CB342',  // bill green
+  package: '#A0522D',  // cardboard brown
+};
+var ITEM_EMOJI  = { key:'🔑', phone:'📞', coffee:'☕', cash:'💵', package:'📦' };
 var itemsSheet = new Image(); itemsSheet.src = ITEMS_SHEET_URL;
 
 // Item world objects: each {id, x, y, taken:false, bobT}
 var ITEMS = [];
 // Inventory: which item ids have been picked up
-var INV = { key:false, phone:false, present:false };
+var INV = { key:false, phone:false, coffee:false, cash:false, package:false };
 
-// Power Mode
-var POWER_MODE = false;
-var POWER_MS = 15000;          // 15-second window
-var powerEnds = 0;             // performance.now() ms when power expires
+// Victory state — set true when all 5 items collected, triggers end screen.
+var VICTORY = false;
 
 // Zombies
 // Each zombie character has a 2x2 sprite sheet: down/up/right/left.
@@ -690,7 +722,6 @@ var ZOMBIE_DETECT = 280;       // px proximity for detection
 var ZOMBIE_VISION_CONE = 120 * Math.PI/180;  // 120° vision cone in front of zombie
 var ZOMBIE_BASE_SPD = 0.5;     // wander speed multiplier (relative to P.spd)
 var ZOMBIE_CHASE_SPD = 0.8;    // chase speed (0.8 of player)
-var ZOMBIE_FLEE_SPD = 1.0;     // flee speed in power mode (matches player)
 var ZOMBIE_TOUCH_RADIUS = 70;  // touch distance for game-over (slightly generous)
 var ZOMBIES = [];
 
@@ -710,7 +741,7 @@ function randomWalkablePoint(){
 
 function spawnItems(){
   ITEMS = [];
-  var ids = ['key','phone','present'];
+  var ids = ['key','phone','coffee','cash','package'];
   ids.forEach(function(id){
     var p = randomWalkablePoint();
     ITEMS.push({ id:id, x:p.x, y:p.y, taken:false, bobT:Math.random()*Math.PI*2 });
@@ -751,12 +782,12 @@ function dirToFacing(angle){
 }
 
 function resetInventory(){
-  INV.key=false; INV.phone=false; INV.present=false;
+  INV.key=false; INV.phone=false; INV.coffee=false; INV.cash=false; INV.package=false;
   updateInventoryHUD();
 }
 
 function updateInventoryHUD(){
-  ['key','phone','present'].forEach(function(id){
+  ['key','phone','coffee','cash','package'].forEach(function(id){
     var el = document.getElementById('inv-'+id);
     if(!el) return;
     if(INV[id]){
@@ -770,9 +801,8 @@ function updateInventoryHUD(){
 }
 
 // ── OBJECTIVE BANNER + ITEM COUNTER ─────────────────────────────
-// Total items in the current build. When we bump to 5 items, change this to 5
-// and update the max field. Counter shows X/TOTAL_ITEMS, banner mentions it.
-var TOTAL_ITEMS = 3;
+// Total items in the current build.
+var TOTAL_ITEMS = 5;
 
 function showObjectiveBanner(text){
   var el = document.getElementById('obj-banner');
@@ -797,15 +827,11 @@ function showObjectiveBanner(text){
 }
 
 function updateItemCounter(){
-  var cur = (INV.key?1:0) + (INV.phone?1:0) + (INV.present?1:0);
+  var cur = (INV.key?1:0) + (INV.phone?1:0) + (INV.coffee?1:0) + (INV.cash?1:0) + (INV.package?1:0);
   var curEl = document.getElementById('ic-cur');
   var maxEl = document.getElementById('ic-max');
   if(curEl) curEl.textContent = cur;
   if(maxEl) maxEl.textContent = TOTAL_ITEMS;
-  // When all items collected, swap objective banner to next step
-  if(cur >= TOTAL_ITEMS){
-    showObjectiveBanner('All items collected! Get to the roof — fast.');
-  }
 }
 
 function showItemCounter(){
@@ -828,7 +854,7 @@ function startGame(){
   //    after the cutscene on mobile.
   try {
     var unlockPromises = [];
-    [menuMusic, gameplayMusic].forEach(function(audio){
+    [menuMusic, gameplayMusic, pickupSfx].forEach(function(audio){
       if(audio && audio.paused){
         // play/pause cycle unlocks the element on iOS
         audio.muted = true;
@@ -873,8 +899,7 @@ function beginGameplay(){
   // Reset world state
   placePlayer();
   resetInventory();
-  POWER_MODE = false;
-  document.getElementById('power-banner').classList.remove('show');
+  VICTORY = false;
   spawnItems();
   spawnZombies();
   startGameplayMusic();
@@ -882,19 +907,18 @@ function beginGameplay(){
   showObjectiveBanner('This is your property! Collect all 5 power items and head to the roof before the nagging tenants corner you...');
 }
 
-function activatePowerMode(){
-  POWER_MODE = true;
-  powerEnds = performance.now() + POWER_MS;
-  document.getElementById('power-banner').classList.add('show');
-  // Flip all zombies to flee state immediately
-  ZOMBIES.forEach(function(z){ z.state='flee'; });
-}
-
-function endPowerMode(){
-  POWER_MODE = false;
-  document.getElementById('power-banner').classList.remove('show');
-  // Zombies return to wander; they'll re-detect player if in range
-  ZOMBIES.forEach(function(z){ z.state='wander'; });
+function triggerVictory(){
+  if(VICTORY) return;
+  VICTORY = true;
+  STATE = 'won';
+  // Hide in-game HUD layers
+  document.getElementById('inv-hud').classList.remove('show');
+  document.getElementById('obj-banner').classList.remove('show');
+  hideItemCounter();
+  // Show victory screen (placeholder until real end cutscene is wired)
+  var el = document.getElementById('victory-screen');
+  if(el) el.classList.add('show');
+  stopGameplayMusic();
 }
 
 // ── ITEMS: pickup, draw with bobbing float + shadow ──────────────
@@ -908,11 +932,12 @@ function updateItems(){
     if(Math.sqrt(dx*dx+dy*dy) < 60){
       it.taken = true;
       INV[it.id] = true;
+      playPickupSfx();
       updateInventoryHUD();
       updateItemCounter();
-      // Check if all 3 collected -> power mode
-      if(INV.key && INV.phone && INV.present){
-        setTimeout(activatePowerMode, 150);
+      // Check if all 5 collected -> victory
+      if(INV.key && INV.phone && INV.coffee && INV.cash && INV.package){
+        setTimeout(triggerVictory, 250);
       }
     }
   }
@@ -937,17 +962,33 @@ function drawItems(){
     // Item floats above the shadow
     var drawY = screenY + bob*ZOOM;
     var size = 56 * ZOOM;
+
+    // ── Pulsing radial glow behind the item ──
+    // Opacity breathes with the bob — brightest at peak (bob=-12, item high),
+    // dimmest at trough. Color tinted to the item's vibe.
+    // Drawn BEFORE the icon so it sits behind it.
+    var glowPhase = (Math.sin(it.bobT) + 1) / 2;  // 0..1 cycle synced to bob
+    var glowAlpha = 0.25 + glowPhase * 0.45;       // breathes 0.25 → 0.70
+    var glowRadius = size * (0.85 + glowPhase * 0.25);  // gently expands too
+    var glowColor = ITEM_COLORS[it.id] || '#F5A623';
+    var grad = ctx.createRadialGradient(screenX, drawY-size/2, 0, screenX, drawY-size/2, glowRadius);
+    grad.addColorStop(0,    hexToRgba(glowColor, glowAlpha));
+    grad.addColorStop(0.5,  hexToRgba(glowColor, glowAlpha*0.4));
+    grad.addColorStop(1,    hexToRgba(glowColor, 0));
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(screenX, drawY-size/2, glowRadius, 0, Math.PI*2);
+    ctx.fill();
+
     if(itemsSheet.complete && itemsSheet.naturalWidth){
-      // Slice the cell for this item from the sheet (5 columns).
-      // The items occupy a vertical band roughly 35%-68% of the image height,
-      // with empty space above and below — so we crop to that band to avoid squish.
+      // Slice the cell for this item from the 3×3 sheet. Cells are even
+      // divisions of the image. The new icons fill their cells well, so we
+      // use the full cell dimensions (no inner crop band needed).
       var cellW = itemsSheet.naturalWidth / ITEMS_SHEET_COLS;
-      var sheetH = itemsSheet.naturalHeight;
-      var srcY = sheetH * 0.34;
-      var srcH = sheetH * 0.34;
-      var col   = ITEM_CELL[it.id];
-      // Draw as a square, preserving the actual item aspect (roughly 1:1)
-      ctx.drawImage(itemsSheet, col*cellW, srcY, cellW, srcH,
+      var cellH = itemsSheet.naturalHeight / ITEMS_SHEET_ROWS;
+      var cell = ITEM_CELL[it.id];
+      // Draw as a square, preserving aspect
+      ctx.drawImage(itemsSheet, cell.c*cellW, cell.r*cellH, cellW, cellH,
                     screenX-size/2, drawY-size, size, size);
     } else {
       // Placeholder: colored circle with emoji while the sheet loads
@@ -963,6 +1004,15 @@ function drawItems(){
       ctx.fillText(ITEM_EMOJI[it.id], screenX, drawY-size/2);
     }
   }
+}
+
+// Helper: convert "#RRGGBB" to "rgba(r,g,b,a)" string for canvas gradient stops.
+function hexToRgba(hex, alpha){
+  var h = hex.replace('#','');
+  var r = parseInt(h.substring(0,2), 16);
+  var g = parseInt(h.substring(2,4), 16);
+  var b = parseInt(h.substring(4,6), 16);
+  return 'rgba('+r+','+g+','+b+','+alpha+')';
 }
 
 // ── ZOMBIES: wander, chase, flee with directional vision ─────────
@@ -981,32 +1031,19 @@ function playerInZombieVision(z, dist){
 }
 
 function updateZombies(){
-  // End power mode when timer runs out
-  if(POWER_MODE){
-    var remaining = (powerEnds - performance.now())/1000;
-    if(remaining<=0){ endPowerMode(); }
-    else { document.getElementById('pb-secs').textContent = Math.ceil(remaining); }
-  }
-
   for(var i=0; i<ZOMBIES.length; i++){
     var z = ZOMBIES[i];
     var dx = P.x - z.x, dy = P.y - z.y;
     var dist = Math.sqrt(dx*dx + dy*dy);
 
     // ── State transitions ──
-    if(POWER_MODE){
-      z.state = 'flee';
+    // Stay in chase if already chasing AND still within larger radius (hysteresis)
+    // Otherwise: enter chase only via vision cone detection
+    if(z.state==='chase'){
+      if(dist > ZOMBIE_DETECT*1.4) z.state='wander';
     } else {
-      // Stay in chase if already chasing AND still within larger radius (hysteresis)
-      // Otherwise: enter chase only via vision cone detection
-      if(z.state==='chase'){
-        if(dist > ZOMBIE_DETECT*1.4) z.state='wander';
-      } else if(z.state==='flee'){
-        z.state='wander';   // power mode ended
-      } else {
-        // wandering: check vision cone
-        if(playerInZombieVision(z, dist)) z.state='chase';
-      }
+      // wandering: check vision cone
+      if(playerInZombieVision(z, dist)) z.state='chase';
     }
 
     // ── Movement based on state ──
@@ -1017,11 +1054,6 @@ function updateZombies(){
       if(dist>0){ moveX = (dx/dist)*spd; moveY = (dy/dist)*spd; }
       // face the player while chasing
       z.facing = dirToFacing(Math.atan2(dy,dx));
-    } else if(z.state==='flee'){
-      spd = P.spd * ZOMBIE_FLEE_SPD;
-      if(dist>0){ moveX = -(dx/dist)*spd; moveY = -(dy/dist)*spd; }
-      // face away from player while fleeing
-      z.facing = dirToFacing(Math.atan2(-dy,-dx));
     } else {
       // wander: pick new heading periodically; update facing each time
       z.dirT--;
@@ -1050,8 +1082,7 @@ function updateZombies(){
     else if(z.state==='wander'){ z.dir = Math.random()*Math.PI*2; z.facing = dirToFacing(z.dir); }
 
     // ── TOUCH DETECTION: game over if zombie touches player ──
-    // Skip touch if in power mode (zombies are fleeing, can't catch you)
-    if(!POWER_MODE && STATE==='playing' && dist < ZOMBIE_TOUCH_RADIUS){
+    if(STATE==='playing' && dist < ZOMBIE_TOUCH_RADIUS){
       triggerGameOver(z);
       return;
     }
@@ -1082,7 +1113,7 @@ function drawZombies(){
       ctx.drawImage(img, cell.c*cellW, cell.r*cellH, cellW, cellH, dx, dy, sw, sh);
     } else {
       // Fallback to colored dot while sprite loads
-      var color = z.state==='chase' ? '#CC2200' : (z.state==='flee' ? '#7CFC9A' : '#29ABE2');
+      var color = z.state==='chase' ? '#CC2200' : '#29ABE2';
       ctx.fillStyle = color;
       ctx.beginPath(); ctx.arc(x, y - sh*0.35, sh*0.18, 0, Math.PI*2); ctx.fill();
     }
@@ -1104,11 +1135,10 @@ function triggerGameOver(byZombie){
   if(STATE!=='playing') return;
   STATE = 'lost';
   document.getElementById('inv-hud').classList.remove('show');
-  document.getElementById('power-banner').classList.remove('show');
   document.getElementById('obj-banner').classList.remove('show');
   hideItemCounter();
   // Count items collected for the resign screen
-  var collected = (INV.key?1:0) + (INV.phone?1:0) + (INV.present?1:0);
+  var collected = (INV.key?1:0) + (INV.phone?1:0) + (INV.coffee?1:0) + (INV.cash?1:0) + (INV.package?1:0);
   document.getElementById('resign-items').textContent = collected;
   var byName = ZOMBIE_CHARACTERS[byZombie.char].name;
   document.getElementById('resign-by').textContent = byName;
@@ -1118,6 +1148,8 @@ function triggerGameOver(byZombie){
 function returnToMenu(){
   STATE = 'menu';
   document.getElementById('resign-screen').classList.remove('show');
+  var v = document.getElementById('victory-screen');
+  if(v) v.classList.remove('show');
   document.getElementById('menu-screen').classList.remove('hidden');
   fadeInMenuMusic();
 }
