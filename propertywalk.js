@@ -19,7 +19,7 @@ var CELL = 512;
 // Negative dx = move LEFT, positive dx = move RIGHT.
 // Negative dy = move UP, positive dy = move DOWN.
 var FACING_FRAME = {
-  down:  { row:0, mirror:false, dx:-10, dy:0, hScale:0.90, wScale:1.05 },
+  down:  { row:0, mirror:false, dx:-10, dy:0, hScale:1.0,  wScale:1.17 },
   left:  { row:1, mirror:false, dx:-10, dy:0, hScale:1.0,  wScale:1.0  },
   right: { row:1, mirror:true,  dx:10,  dy:0, hScale:1.0,  wScale:1.0  },
   up:    { row:3, mirror:false, dx:-10, dy:0, hScale:1.0,  wScale:1.0  },
@@ -909,15 +909,15 @@ function showObjectiveBanner(text){
   // Make sure it's hidden before the 3s delay (in case it was still showing
   // from a previous call).
   el.classList.remove('show');
-  // 3-second delay before the banner slides in — gives the player time to
-  // settle in and see where they are before the objective pops up.
+  // 2-second delay before the banner slides in — gives the player a beat
+  // to settle in before the objective pops up.
   setTimeout(function(){
     void el.offsetWidth; // reflow trick to restart CSS animation
     el.classList.add('show');
     // Hard hide after the full animation cycle finishes.
     // CSS animation: 0.5s slide-in, 7s visible, 1s fade = ~8.2s total.
     setTimeout(function(){ el.classList.remove('show'); }, 8200);
-  }, 3000);
+  }, 2000);
 }
 
 function updateItemCounter(){
