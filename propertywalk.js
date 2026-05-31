@@ -171,10 +171,9 @@ function sizeCanvas(){
 }
 
 function placePlayer(){
-  // Spawn next to Sarah's desk (the one with the coffee cup) in the
-  // top-left UNREAD EMAILS office on the new map.
-  // Rough guess — AJ to walk in and dial in final coords from HUD.
-  P.x=330; P.y=340;
+  // Spawn next to Sarah's desk in the UNREAD EMAILS office (top-left).
+  // Coords locked from AJ's in-game placement.
+  P.x=566; P.y=375;
   // If that lands inside a wall, spiral outward to find clear ground
   if(!canStand(P.x, P.y)){
     var step = 40;
@@ -753,6 +752,11 @@ function showObjectiveBanner(text){
   var el = document.getElementById('obj-banner');
   if(!el) return;
   if(text) document.getElementById('obj-text').textContent = text;
+  // Reposition banner to middle of screen (just below center, where Sarah
+  // appears on spawn). Overrides whatever top/transform the CSS specifies.
+  el.style.top = '55%';
+  el.style.left = '50%';
+  el.style.transform = 'translate(-50%, -50%)';
   // Restart animation by toggling the class
   el.classList.remove('show');
   void el.offsetWidth; // reflow trick to restart CSS animation
