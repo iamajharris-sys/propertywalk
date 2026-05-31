@@ -19,10 +19,10 @@ var CELL = 512;
 // Negative dx = move LEFT, positive dx = move RIGHT.
 // Negative dy = move UP, positive dy = move DOWN.
 var FACING_FRAME = {
-  down:  { row:0, mirror:false, dx:-10, dy:0, hScale:0.95 },
-  left:  { row:1, mirror:false, dx:-10, dy:0, hScale:1.0  },
-  right: { row:1, mirror:true,  dx:10,  dy:0, hScale:1.0  },
-  up:    { row:3, mirror:false, dx:-10, dy:0, hScale:1.0  },
+  down:  { row:0, mirror:false, dx:-10, dy:0, hScale:0.90, wScale:1.05 },
+  left:  { row:1, mirror:false, dx:-10, dy:0, hScale:1.0,  wScale:1.0  },
+  right: { row:1, mirror:true,  dx:10,  dy:0, hScale:1.0,  wScale:1.0  },
+  up:    { row:3, mirror:false, dx:-10, dy:0, hScale:1.0,  wScale:1.0  },
 };
 // Number of frames per walk cycle (4 in our new sheet).
 var WALK_LEN   = 4;
@@ -571,11 +571,14 @@ function drawPlayer(){
     // Look up which row and whether to mirror, based on facing direction.
     var f = FACING_FRAME[P.facing] || FACING_FRAME.down;
     var col = P.moving ? (P.fr % WALK_LEN) : 0;
-    // Per-direction height scale only (width stays at sw to avoid squish).
+    // Per-direction width and height scales — applied independently so we can
+    // make her chunkier/cuter in one direction without affecting others.
     var hScale = (f.hScale !== undefined) ? f.hScale : 1.0;
+    var wScale = (f.wScale !== undefined) ? f.wScale : 1.0;
     var sh2 = sh * hScale;
+    var sw2 = sw * wScale;
     // Re-anchor so feet stay at footY (P.y in world)
-    var dx2 = footX - sw/2, dy2 = footY - sh2;
+    var dx2 = footX - sw2/2, dy2 = footY - sh2;
     // Per-direction nudge so Sarah's body stays centered on the shadow.
     // Scales with zoom so it stays visually consistent at any zoom level.
     var offX = (f.dx||0) * ZOOM;
@@ -583,12 +586,12 @@ function drawPlayer(){
     if(f.mirror){
       // Flip the sprite horizontally by scaling x by -1.
       ctx.save();
-      ctx.translate(dx2 + sw + offX, dy2 + offY);
+      ctx.translate(dx2 + sw2 + offX, dy2 + offY);
       ctx.scale(-1, 1);
-      ctx.drawImage(sheet, col*CELL, f.row*CELL, CELL, CELL, 0, 0, sw, sh2);
+      ctx.drawImage(sheet, col*CELL, f.row*CELL, CELL, CELL, 0, 0, sw2, sh2);
       ctx.restore();
     } else {
-      ctx.drawImage(sheet, col*CELL, f.row*CELL, CELL, CELL, dx2+offX, dy2+offY, sw, sh2);
+      ctx.drawImage(sheet, col*CELL, f.row*CELL, CELL, CELL, dx2+offX, dy2+offY, sw2, sh2);
     }
   } else {
     ctx.fillStyle='#1A2B4A'; ctx.fillRect(dx,dy,sw,sh);
