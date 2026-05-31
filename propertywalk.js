@@ -31,6 +31,25 @@ var FRAME_TICK = 7;
 var PROFILE_ASPECT = 0.78;
 
 var sheet = new Image(); sheet.src = SHEET_URL;
+
+// ── CELEBRATION SPRITE SHEET ─────────────────────────────────────
+// 3 frames horizontally arranged in a 2048×2048 image. Frame 1 (peak) has
+// Sarah airborne, so her feet are NOT at the same y as frames 0 and 2.
+// CELEB_FEET_Y_SRC stores the source-pixel feet-y for each frame so we can
+// anchor each frame's feet to Sarah's world position regardless of where
+// the art draws them within the cell.
+var CELEBRATION_SHEET_URL = 'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bb9a7ba03ba59ac722312_EDIT_the_existing_Sarah_charac_Nano_Banana_2_54005-removebg.png';
+var CELEBRATION_CELL_W = 2048 / 3;       // ~682.67px per cell horizontally
+var CELEBRATION_SHEET_H = 2048;
+// Measured pixel positions of feet in each frame's source cell:
+//   Frame 0 (anticipation, on ground):  feet at y=1943
+//   Frame 1 (peak, airborne):           feet at y=1573 (370px higher)
+//   Frame 2 (landing, on ground):       feet at y=1943
+var CELEB_FEET_Y_SRC = [1943, 1573, 1943];
+// Animation parameters
+var CELEBRATION_DURATION = 600;          // ms — total celebration length
+var CELEBRATION_JUMP_HEIGHT = 50;        // world-px peak elevation
+var celebrationSheet = new Image(); celebrationSheet.src = CELEBRATION_SHEET_URL;
 var mapImg = new Image(); var mapReady=false, mapFailed=false;
 
 // World dimensions (set once the map loads; placeholder until then)
@@ -157,7 +176,72 @@ var canvas, ctx, VW, VH;        // viewport (canvas) size in CSS px
 var ZOOM = 1.1;                 // how zoomed-in the camera is
 var cam = { x:0, y:0 };         // camera top-left in WORLD coords
 
-var P = { x:1024, y:1024, w:72, h:152, facing:'down', moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0 };
+var P = { x:1024, y:1024, w:72, h:152, facing:'down', moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0, celebrating:false, celebrateStart:0 };
+
+// ── SPARKLE PARTICLES (celebration flourish) ─────────────────────
+// Particle pool — pushed on celebration start, updated/drawn each frame,
+// removed when their life expires.
+var sparkles = [];
+var SPARKLE_COLORS = ['#FFD700', '#FFFFFF', '#29ABE2', '#F5C518'];  // gold, white, sky blue, brand gold
+
+function spawnCelebrationSparkles(x, y){
+  // 12 sparkles burst around Sarah's body center
+  for(var i=0; i<12; i++){
+    var angle = Math.random() * Math.PI * 2;
+    var speed = 1.5 + Math.random() * 2.5;
+    sparkles.push({
+      x: x,
+      y: y - 60,                           // start at her body, not feet
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 1.5,    // bias upward
+      life: 600 + Math.random()*250,
+      born: performance.now(),
+      color: SPARKLE_COLORS[Math.floor(Math.random()*SPARKLE_COLORS.length)],
+      size: 6 + Math.random()*5,
+      rot: Math.random() * Math.PI * 2,
+      rotSpd: (Math.random()-0.5) * 0.2,
+    });
+  }
+}
+
+function updateAndDrawSparkles(){
+  var now = performance.now();
+  for(var i=sparkles.length-1; i>=0; i--){
+    var s = sparkles[i];
+    var age = now - s.born;
+    if(age >= s.life){ sparkles.splice(i, 1); continue; }
+    // physics
+    s.x += s.vx;
+    s.y += s.vy;
+    s.vy += 0.05;     // slight gravity so they arc back down
+    s.vx *= 0.98;     // air resistance
+    s.rot += s.rotSpd;
+    // alpha fades out over the lifetime (quadratic for smoother end)
+    var lifeT = age / s.life;
+    var alpha = 1 - lifeT * lifeT;
+    // draw as a 4-pointed star
+    var screenX = w2sX(s.x);
+    var screenY = w2sY(s.y);
+    var size = s.size * ZOOM;
+    ctx.save();
+    ctx.translate(screenX, screenY);
+    ctx.rotate(s.rot);
+    ctx.fillStyle = hexToRgba(s.color, alpha);
+    // 4-pointed star path
+    ctx.beginPath();
+    ctx.moveTo(0, -size);
+    ctx.lineTo(size*0.3, -size*0.3);
+    ctx.lineTo(size, 0);
+    ctx.lineTo(size*0.3, size*0.3);
+    ctx.lineTo(0, size);
+    ctx.lineTo(-size*0.3, size*0.3);
+    ctx.lineTo(-size, 0);
+    ctx.lineTo(-size*0.3, -size*0.3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+}
 var K = { up:false, down:false, left:false, right:false };
 var JOY = { active:false, vx:0, vy:0, id:null, bx:0, by:0 };
 
@@ -473,6 +557,69 @@ function drawPlayer(){
   var sw = sh*a;
   var footX = w2sX(P.x), footY = w2sY(P.y);
 
+  // ── doorway hide check: if Sarah's feet are inside any HIDE_ZONE,
+  //    skip drawing her sprite (shadow still shows so player knows she's there).
+  for(var i=0; i<HIDE_ZONES.length; i++){
+    var z = HIDE_ZONES[i];
+    if(P.x >= z.x && P.x <= z.x+z.w && P.y >= z.y && P.y <= z.y+z.h){
+      // still draw the shadow (always visible)
+      var shWh = sw*0.55, shHh = shWh*0.35;
+      ctx.save();
+      ctx.fillStyle='rgba(0,0,0,0.22)';
+      ctx.beginPath();
+      ctx.ellipse(footX, footY, shWh/2, shHh/2, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+  }
+
+  // ── CELEBRATION ANIMATION (priority over normal walking draw) ──
+  // If she's celebrating AND the sheet is loaded, draw the celebration frame
+  // with a jump-arc Y offset and a shrinking shadow at the peak.
+  if(P.celebrating && celebrationSheet.complete && celebrationSheet.naturalWidth){
+    var elapsed = performance.now() - P.celebrateStart;
+    if(elapsed >= CELEBRATION_DURATION){
+      // celebration done — clear state and fall through to normal draw
+      P.celebrating = false;
+    } else {
+      var t = elapsed / CELEBRATION_DURATION;   // 0..1
+      // Frame timing: 0..25% = frame 0, 25..75% = frame 1, 75..100% = frame 2
+      var frameIdx = (t < 0.25) ? 0 : (t < 0.75 ? 1 : 2);
+      // Sin-arc jump: 0 → 1 → 0, peaks at t=0.5
+      var jumpArc = Math.sin(t * Math.PI);
+      var jumpOffsetY = jumpArc * CELEBRATION_JUMP_HEIGHT * ZOOM;
+      // Shadow shrinks at peak — same trick as items
+      var shadowScale = 1 - jumpArc * 0.45;
+      var shW = sw * 0.55 * shadowScale, shH = shW * 0.35;
+      // Draw shadow first (on the ground, stays at footY)
+      ctx.save();
+      ctx.fillStyle='rgba(0,0,0,0.22)';
+      ctx.beginPath();
+      ctx.ellipse(footX, footY, shW/2, shH/2, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+      // Compute scale: map her standing height (1314 source px) to her world sprite height.
+      var S = sh / 1314;
+      // Source rect for this frame's cell (full vertical extent)
+      var srcX = frameIdx * CELEBRATION_CELL_W;
+      var srcY = 0;
+      var srcW = CELEBRATION_CELL_W;
+      var srcH = CELEBRATION_SHEET_H;
+      // Destination size
+      var destW = srcW * S;
+      var destH = srcH * S;
+      // Anchor: her feet (in source pixels) should map to footY on screen,
+      // minus the jump arc offset. Center horizontally on footX.
+      var feetYInSrc = CELEB_FEET_Y_SRC[frameIdx];
+      var destX = footX - destW/2;
+      var destY = footY - feetYInSrc * S - jumpOffsetY;
+      ctx.drawImage(celebrationSheet, srcX, srcY, srcW, srcH, destX, destY, destW, destH);
+      return;
+    }
+  }
+
+  // ── NORMAL WALKING DRAW (default) ──
   // ── shadow circle on the ground (always drawn) ──
   var shW = sw*0.55, shH = shW*0.35;
   ctx.save();
@@ -481,13 +628,6 @@ function drawPlayer(){
   ctx.ellipse(footX, footY, shW/2, shH/2, 0, 0, Math.PI*2);
   ctx.fill();
   ctx.restore();
-
-  // ── doorway hide check: if Sarah's feet are inside any HIDE_ZONE,
-  //    skip drawing her sprite (shadow still shows so player knows she's there).
-  for(var i=0; i<HIDE_ZONES.length; i++){
-    var z = HIDE_ZONES[i];
-    if(P.x >= z.x && P.x <= z.x+z.w && P.y >= z.y && P.y <= z.y+z.h) return;
-  }
 
   var dx = footX - sw/2, dy = footY - sh;
 
@@ -933,6 +1073,10 @@ function updateItems(){
       it.taken = true;
       INV[it.id] = true;
       playPickupSfx();
+      // Start celebration animation — restarts cleanly if already celebrating
+      P.celebrating = true;
+      P.celebrateStart = performance.now();
+      spawnCelebrationSparkles(P.x, P.y);
       updateInventoryHUD();
       updateItemCounter();
       // Check if all 5 collected -> victory
@@ -1175,9 +1319,9 @@ var loop=function(){
   P.spd = parseFloat(document.getElementById('speed').value);
   ZOOM = parseFloat(document.getElementById('zoom').value);
 
-  // movement (normalized; keyboard or joystick) — only when playing
+  // movement (normalized; keyboard or joystick) — only when playing AND not celebrating
   var ix=0, iy=0;
-  if(STATE==='playing' && !EDIT){
+  if(STATE==='playing' && !EDIT && !P.celebrating){
     if(JOY.active){ ix=JOY.vx; iy=JOY.vy; }
     else {
       if(K.up)iy-=1; if(K.down)iy+=1; if(K.left)ix-=1; if(K.right)ix+=1;
@@ -1218,6 +1362,7 @@ var loop=function(){
     drawZombies();
   }
   drawPlayer();
+  updateAndDrawSparkles();
 
   document.getElementById('cx').textContent=Math.round(P.x);
   document.getElementById('cy').textContent=Math.round(P.y);
