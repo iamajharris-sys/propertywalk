@@ -785,10 +785,22 @@ var ZOMBIE_CHARACTERS = {
   // mirrorDir: 'none' | 'left' | 'right' — workaround for sheets where one of
   // the side rows is unreliable. The opposite row is mirrored to fill the
   // bad row. e.g. mirrorDir='left' means use right row mirrored for left.
-  grumpy:     { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c90f365d062b2a6e7ee6d_Grumpy_guywalking.png', name:'Grumpy',     enabled:true,  mirrorDir:'none',  chaseSpeed:0.4 },
+  // frameMap overrides the default 4×4 layout with explicit (row, col) sequences
+  // per direction — used when a sheet has scattered/mixed-direction frames and
+  // we need to hand-pick only the cells that face the correct way.
+  grumpy:     {
+    url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c90f365d062b2a6e7ee6d_Grumpy_guywalking.png',
+    name:'Grumpy', enabled:true, mirrorDir:'none', chaseSpeed:0.4,
+    frameMap:{
+      down:  [[0,0],[0,1],[0,2],[0,3]],   // all of row 0 face down (mouth varies)
+      left:  [[1,0],[1,2]],                // only cells in row 1 that truly face left
+      right: [[2,0],[2,1],[2,2]],          // only cells in row 2 that truly face right
+      up:    [[3,0],[3,1],[3,2],[3,3]],   // all of row 3 face up (back of head)
+    },
+  },
   karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen',      enabled:false, mirrorDir:'none',  chaseSpeed:0.5 },
   complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true,  mirrorDir:'left',  chaseSpeed:0.5 },
-  talkative:  { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c93206b8fa6046c5ee76e_Talkative%20guy.png',  name:'Talkative',  enabled:true,  mirrorDir:'right', chaseSpeed:0.6 },
+  talkative:  { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c93206b8fa6046c5ee76e_Talkative%20guy.png',  name:'Talkative',  enabled:true,  mirrorDir:'left',  chaseSpeed:0.6, rows:{down:0, right:1, left:2, up:3} },
 };
 // 4×4 sprite sheet layout — each direction is a row, each row has 4 walk frames.
 //   ROW 0: facing DOWN   (4-frame walk cycle)
@@ -1232,25 +1244,37 @@ function drawZombies(){
     if(img && img.complete && img.naturalWidth){
       var cellW = img.naturalWidth / ZOMBIE_SHEET_COLS;
       var cellH = img.naturalHeight / ZOMBIE_SHEET_ROWS;
-      // Per-character mirrorDir: if set to 'left' or 'right', that side's row
-      // is replaced by mirroring the opposite row. Workaround for sheets
-      // where one side row was drawn unreliably.
-      var mirrorDir = charDef && charDef.mirrorDir;
-      var useMirror = (mirrorDir === z.facing);  // true if this facing is the "bad" side
-      var rowKey = z.facing;
-      if(useMirror){
-        rowKey = (z.facing === 'left') ? 'right' : 'left';
+      var srcRow, srcCol;
+      var useMirror = false;
+      // PRIORITY 1: frameMap — explicit list of (row, col) cells for this facing.
+      // Used for sheets where direction frames are scattered, not row-aligned.
+      if(charDef && charDef.frameMap && charDef.frameMap[z.facing]){
+        var frames = charDef.frameMap[z.facing];
+        var idx = (z.state === 'chase') ? (z.fr % frames.length) : 0;
+        srcRow = frames[idx][0];
+        srcCol = frames[idx][1];
+      } else {
+        // PRIORITY 2: default — row from facing, col from walk frame.
+        // mirrorDir: if set to 'left' or 'right', that side's row is replaced
+        // by mirroring the opposite row.
+        var mirrorDir = charDef && charDef.mirrorDir;
+        useMirror = (mirrorDir === z.facing);
+        var rowKey = z.facing;
+        if(useMirror){
+          rowKey = (z.facing === 'left') ? 'right' : 'left';
+        }
+        var rowMap = (charDef && charDef.rows) || ZOMBIE_ROW;
+        srcRow = (rowMap[rowKey] !== undefined) ? rowMap[rowKey] : rowMap.down;
+        srcCol = (z.state === 'chase') ? (z.fr % ZOMBIE_WALK_LEN) : 0;
       }
-      var row = (ZOMBIE_ROW[rowKey] !== undefined) ? ZOMBIE_ROW[rowKey] : ZOMBIE_ROW.down;
-      var col = (z.state === 'chase') ? (z.fr % ZOMBIE_WALK_LEN) : 0;
       if(useMirror){
         ctx.save();
         ctx.translate(dx + sw, dy);
         ctx.scale(-1, 1);
-        ctx.drawImage(img, col*cellW, row*cellH, cellW, cellH, 0, 0, sw, sh);
+        ctx.drawImage(img, srcCol*cellW, srcRow*cellH, cellW, cellH, 0, 0, sw, sh);
         ctx.restore();
       } else {
-        ctx.drawImage(img, col*cellW, row*cellH, cellW, cellH, dx, dy, sw, sh);
+        ctx.drawImage(img, srcCol*cellW, srcRow*cellH, cellW, cellH, dx, dy, sw, sh);
       }
     } else {
       // Fallback dot while sprite loads
