@@ -48,7 +48,7 @@ var CELEBRATION_SHEET_H = 2048;
 var CELEB_FEET_Y_SRC = [1943, 1573, 1943];
 // Animation parameters
 var CELEBRATION_DURATION = 600;          // ms — total celebration length
-var CELEBRATION_JUMP_HEIGHT = 50;        // world-px peak elevation
+var CELEBRATION_JUMP_HEIGHT = 75;        // world-px peak elevation
 var celebrationSheet = new Image(); celebrationSheet.src = CELEBRATION_SHEET_URL;
 var mapImg = new Image(); var mapReady=false, mapFailed=false;
 
@@ -56,87 +56,19 @@ var mapImg = new Image(); var mapReady=false, mapFailed=false;
 var WORLD = { w: 2048, h: 2048 };
 
 // ── COLLISION BOXES (world-pixel coords for the 2048x2048 New Map) ──
-// Baked from AJ's edit-mode tuning pass.
+// TEMPORARY — stripped down to just the 4 outer walls so we can test zombie
+// behavior without them getting stuck on interior furniture. Full collision
+// set will be re-baked once zombie AI is dialed in.
 var COLLISION_DEFAULTS = [
-  {x:0,y:0,w:2048,h:60},
-  {x:0,y:1990,w:2048,h:60},
-  {x:0,y:0,w:60,h:2048},
-  {x:1988,y:0,w:60,h:2048},
-  {x:60,y:60,w:120,h:120},
-  {x:1868,y:60,w:120,h:120},
-  {x:60,y:1868,w:120,h:120},
-  {x:1868,y:1868,w:120,h:120},
-  {x:754,y:245,w:54,h:203},
-  {x:120,y:130,w:280,h:120},
-  {x:441,y:236,w:60,h:109},
-  {x:100,y:300,w:130,h:140},
-  {x:100,y:465,w:195,h:95},
-  {x:1483,y:1400,w:280,h:60},
-  {x:598,y:604,w:189,h:130},
-  {x:800,y:317,w:477,h:150},
-  {x:1380,y:130,w:50,h:427},
-  {x:1450,y:540,w:480,h:30},
-  {x:1500,y:110,w:240,h:80},
-  {x:1500,y:230,w:80,h:220},
-  {x:1500,y:380,w:280,h:80},
-  {x:1800,y:380,w:100,h:90},
-  {x:1660,y:300,w:90,h:60},
-  {x:1830,y:90,w:90,h:140},
-  {x:80,y:613,w:287,h:237},
-  {x:93,y:970,w:340,h:130},
-  {x:60,y:1080,w:540,h:30},
-  {x:737,y:687,w:137,h:113},
-  {x:1170,y:630,w:157,h:93},
-  {x:680,y:670,w:130,h:130},
-  {x:617,y:733,w:203,h:130},
-  {x:993,y:830,w:63,h:217},
-  {x:1190,y:910,w:120,h:130},
-  {x:1470,y:620,w:170,h:90},
-  {x:1280,y:730,w:170,h:60},
-  {x:837,y:1090,w:67,h:120},
-  {x:447,y:803,w:140,h:90},
-  {x:1130,y:1140,w:120,h:130},
-  {x:910,y:1243,w:130,h:83},
-  {x:1410,y:580,w:30,h:680},
-  {x:1500,y:620,w:130,h:200},
-  {x:1660,y:620,w:130,h:200},
-  {x:1880,y:600,w:80,h:280},
-  {x:1600,y:880,w:240,h:80},
-  {x:1473,y:1010,w:80,h:160},
-  {x:1850,y:1060,w:90,h:200},
-  {x:1410,y:1260,w:580,h:30},
-  {x:80,y:1380,w:520,h:30},
-  {x:580,y:1380,w:30,h:580},
-  {x:100,y:1430,w:230,h:160},
-  {x:200,y:1620,w:130,h:110},
-  {x:340,y:1750,w:240,h:200},
-  {x:120,y:1750,w:170,h:100},
-  {x:760,y:1500,w:90,h:140},
-  {x:1180,y:1500,w:90,h:140},
-  {x:700,y:1620,w:120,h:130},
-  {x:1130,y:1640,w:90,h:100},
-  {x:900,y:1700,w:260,h:240},
-  {x:870,y:1900,w:320,h:80},
-  {x:1380,y:1380,w:580,h:30},
-  {x:1380,y:1380,w:30,h:560},
-  {x:1620,y:1750,w:340,h:120},
-  {x:1820,y:1500,w:140,h:280},
-  {x:1860,y:1390,w:120,h:90},
-  {x:1430,y:1430,w:90,h:120},
-  {x:1430,y:1820,w:90,h:120},
-  {x:593,y:541,w:151,h:120},
-  {x:330,y:1080,w:200,h:60},
-  {x:580,y:1130,w:170,h:80},
-  {x:1260,y:1140,w:140,h:80},
-  {x:600,y:1410,w:160,h:80},
-  {x:1250,y:1410,w:130,h:80},
-  {x:796,y:483,w:33,h:24},
-  {x:729,y:537,w:20,h:28},
+  {x:0,    y:0,    w:2048, h:60},    // top wall
+  {x:0,    y:1990, w:2048, h:60},    // bottom wall
+  {x:0,    y:0,    w:60,   h:2048},  // left wall
+  {x:1988, y:0,    w:60,   h:2048},  // right wall
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
-// v3 = new map collision set (key bumped to invalidate old map edits)
-var LS_KEY = 'pw_collisions_v3';
+// v4 = stripped to 4 outer walls only for zombie testing
+var LS_KEY = 'pw_collisions_v4';
 var COLLISIONS = [];
 var LS_OK = true;  // becomes false if localStorage is blocked (e.g. preview sandbox)
 function loadCollisions(){
@@ -182,7 +114,7 @@ var P = { x:1024, y:1024, w:72, h:152, facing:'down', moving:false, fr:0, frT:0,
 // Particle pool — pushed on celebration start, updated/drawn each frame,
 // removed when their life expires.
 var sparkles = [];
-var SPARKLE_COLORS = ['#FFD700', '#FFFFFF', '#29ABE2', '#F5C518'];  // gold, white, sky blue, brand gold
+var SPARKLE_COLORS = ['#FFD700', '#FFFFFF'];  // gold and white only
 
 function spawnCelebrationSparkles(x, y){
   // 12 sparkles burst around Sarah's body center
@@ -580,8 +512,12 @@ function drawPlayer(){
   if(P.celebrating && celebrationSheet.complete && celebrationSheet.naturalWidth){
     var elapsed = performance.now() - P.celebrateStart;
     if(elapsed >= CELEBRATION_DURATION){
-      // celebration done — clear state and fall through to normal draw
+      // celebration done — clear state, reset facing to forward (down),
+      // and fall through to normal walking draw
       P.celebrating = false;
+      P.facing = 'down';
+      P.fr = 0;
+      P.frT = 0;
     } else {
       var t = elapsed / CELEBRATION_DURATION;   // 0..1
       // Frame timing: 0..25% = frame 0, 25..75% = frame 1, 75..100% = frame 2
@@ -834,22 +770,28 @@ var VICTORY = false;
 // Zombies
 // Each zombie character has a 2x2 sprite sheet: down/up/right/left.
 // (Same layout as Sarah v1 / Grumpy / Karen.)
-// ── DEV TOGGLE: flip to true to enable zombies, false to remove them
-//    (useful when tuning collision so they don't chase you)
-var ZOMBIES_ENABLED = false;
+// ── DEV TOGGLE: zombies on/off
+var ZOMBIES_ENABLED = true;
 
 var ZOMBIE_CHARACTERS = {
-  grumpy:     { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a7444c5deaf6ef798a00_Grumpy_man.png',      name:'Grumpy' },
-  karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen' },
-  complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a77971435c1aee6471ee_Complainer_sprites.png',name:'Complainer' },
+  grumpy:     { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a7444c5deaf6ef798a00_Grumpy_man.png',      name:'Grumpy',     enabled:false },
+  karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen',      enabled:false },
+  complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true  },
 };
-// Cell map for 2x2 (col,row) — same convention as Grumpy: r0c0 down, r0c1 up, r1c0 right, r1c1 left
-var ZOMBIE_CELL = {
-  down:  {c:0,r:0},
-  up:    {c:1,r:0},
-  right: {c:0,r:1},
-  left:  {c:1,r:1},
-};
+// 4×4 sprite sheet layout — each direction is a row, each row has 4 walk frames.
+//   ROW 0: facing DOWN   (4-frame walk cycle)
+//   ROW 1: facing LEFT   (4-frame walk cycle)
+//   ROW 2: facing RIGHT  (4-frame walk cycle)
+//   ROW 3: facing UP     (4-frame walk cycle)
+//   COL 0 = idle/stride-neutral (mouth closed)
+//   COL 1 = mid-stride (mouth small open)
+//   COL 2 = stride-pass (mouth closed)
+//   COL 3 = mid-stride other side (mouth wide open / yelling)
+var ZOMBIE_ROW = { down:0, left:1, right:2, up:3 };
+var ZOMBIE_WALK_LEN = 4;
+var ZOMBIE_FRAME_TICK = 8;       // game-loop ticks per walk frame
+var ZOMBIE_SHEET_COLS = 4;
+var ZOMBIE_SHEET_ROWS = 4;
 // Load zombie sprite images
 var zombieImgs = {};
 Object.keys(ZOMBIE_CHARACTERS).forEach(function(k){
@@ -857,12 +799,12 @@ Object.keys(ZOMBIE_CHARACTERS).forEach(function(k){
   zombieImgs[k] = im;
 });
 
-// One zombie of each character on the map
-var ZOMBIE_DETECT = 280;       // px proximity for detection
-var ZOMBIE_VISION_CONE = 120 * Math.PI/180;  // 120° vision cone in front of zombie
-var ZOMBIE_BASE_SPD = 0.5;     // wander speed multiplier (relative to P.spd)
-var ZOMBIE_CHASE_SPD = 0.8;    // chase speed (0.8 of player)
-var ZOMBIE_TOUCH_RADIUS = 70;  // touch distance for game-over (slightly generous)
+// One zombie of each enabled character on the map.
+// Detection is 360° (full circle) within ZOMBIE_DETECT radius — she "senses"
+// Sarah regardless of which way she's facing.
+var ZOMBIE_DETECT = 320;       // world-px detection radius
+var ZOMBIE_CHASE_SPD = 0.7;    // 70% of player speed when chasing
+var ZOMBIE_TOUCH_RADIUS = 70;  // touch distance for game-over
 var ZOMBIES = [];
 
 function rand(a,b){ return a + Math.random()*(b-a); }
@@ -890,23 +832,23 @@ function spawnItems(){
 
 function spawnZombies(){
   ZOMBIES = [];
-  if(!ZOMBIES_ENABLED) return;   // dev toggle — set to false for collision tuning
-  var charKeys = Object.keys(ZOMBIE_CHARACTERS);
-  charKeys.forEach(function(charKey){
+  if(!ZOMBIES_ENABLED) return;
+  Object.keys(ZOMBIE_CHARACTERS).forEach(function(charKey){
+    var charDef = ZOMBIE_CHARACTERS[charKey];
+    if(!charDef.enabled) return;   // skip characters whose sprite isn't ready yet
     var p, dx, dy, tries=0;
     do {
       p = randomWalkablePoint();
       dx = p.x-P.x; dy = p.y-P.y;
       tries++;
     } while(Math.sqrt(dx*dx+dy*dy) < 500 && tries<50);
-    var initialDir = Math.random()*Math.PI*2;
     ZOMBIES.push({
       char: charKey,
       x: p.x, y: p.y,
-      dir: initialDir,                  // current heading (radians)
-      facing: dirToFacing(initialDir),  // 'down'|'up'|'right'|'left' for sprite
-      dirT: 0,
-      state: 'wander',                  // 'wander' | 'chase' | 'flee'
+      facing: 'down',        // start facing toward camera (plain front view)
+      state: 'idle',         // 'idle' | 'chase'
+      fr: 0,                 // walk frame index (0..3)
+      frT: 0,                // walk frame tick counter
     });
   });
 }
@@ -1175,74 +1117,63 @@ function hexToRgba(hex, alpha){
   return 'rgba('+r+','+g+','+b+','+alpha+')';
 }
 
-// ── ZOMBIES: wander, chase, flee with directional vision ─────────
-// Returns true if the player is within the zombie's vision cone in front of it.
-// Vision = within radius AND within VISION_CONE angle of zombie's current facing.
-function playerInZombieVision(z, dist){
-  if(dist > ZOMBIE_DETECT) return false;
-  if(dist < 30) return true;  // touching counts as seen (avoid divide issues)
-  // angle from zombie to player
-  var ang = Math.atan2(P.y - z.y, P.x - z.x);
-  // zombie's facing direction as an angle
-  var facingAng = { right:0, down:Math.PI/2, left:Math.PI, up:-Math.PI/2 }[z.facing];
-  // smallest angle difference
-  var diff = Math.abs(((ang - facingAng + Math.PI) % (Math.PI*2)) - Math.PI);
-  return diff <= ZOMBIE_VISION_CONE/2;
-}
-
+// ── ZOMBIES: idle until Sarah is within detection radius, then chase ──
 function updateZombies(){
   for(var i=0; i<ZOMBIES.length; i++){
     var z = ZOMBIES[i];
     var dx = P.x - z.x, dy = P.y - z.y;
     var dist = Math.sqrt(dx*dx + dy*dy);
 
-    // ── State transitions ──
-    // Stay in chase if already chasing AND still within larger radius (hysteresis)
-    // Otherwise: enter chase only via vision cone detection
-    if(z.state==='chase'){
-      if(dist > ZOMBIE_DETECT*1.4) z.state='wander';
+    // ── State transitions (360° detection — no vision cone) ──
+    if(z.state === 'chase'){
+      // Lose interest if Sarah escapes far beyond detection (hysteresis)
+      if(dist > ZOMBIE_DETECT * 1.5) z.state = 'idle';
     } else {
-      // wandering: check vision cone
-      if(playerInZombieVision(z, dist)) z.state='chase';
+      // Idle: detect Sarah anywhere within radius
+      if(dist <= ZOMBIE_DETECT) z.state = 'chase';
     }
 
-    // ── Movement based on state ──
-    var spd = P.spd * ZOMBIE_BASE_SPD;
-    var moveX = 0, moveY = 0;
-    if(z.state==='chase'){
-      spd = P.spd * ZOMBIE_CHASE_SPD;
-      if(dist>0){ moveX = (dx/dist)*spd; moveY = (dy/dist)*spd; }
-      // face the player while chasing
-      z.facing = dirToFacing(Math.atan2(dy,dx));
-    } else {
-      // wander: pick new heading periodically; update facing each time
-      z.dirT--;
-      if(z.dirT<=0){
-        z.dir = Math.random()*Math.PI*2;
-        z.dirT = 80 + Math.random()*140;
-        z.facing = dirToFacing(z.dir);
+    // ── Movement + animation ──
+    if(z.state === 'chase'){
+      var spd = P.spd * ZOMBIE_CHASE_SPD;
+      var moveX = 0, moveY = 0;
+      if(dist > 0){
+        moveX = (dx/dist) * spd;
+        moveY = (dy/dist) * spd;
       }
-      moveX = Math.cos(z.dir)*spd; moveY = Math.sin(z.dir)*spd;
+      // Update facing to point toward Sarah
+      z.facing = dirToFacing(Math.atan2(dy, dx));
+      // Animate walk cycle while chasing — alternating mouth open/closed
+      z.frT++;
+      if(z.frT > ZOMBIE_FRAME_TICK){
+        z.fr = (z.fr + 1) % ZOMBIE_WALK_LEN;
+        z.frT = 0;
+      }
+      // Apply movement with collision
+      var ZFB_W = 50, ZFB_H = 30;
+      var tryX = z.x + moveX;
+      var fbX = {x:tryX-ZFB_W/2, y:z.y-ZFB_H/2, w:ZFB_W, h:ZFB_H};
+      var blocked = false;
+      for(var c=0; c<COLLISIONS.length; c++){
+        if(rectOverlap(fbX, COLLISIONS[c])){ blocked = true; break; }
+      }
+      if(!blocked && tryX >= 50 && tryX <= WORLD.w-50) z.x = tryX;
+      var tryY = z.y + moveY;
+      var fbY = {x:z.x-ZFB_W/2, y:tryY-ZFB_H/2, w:ZFB_W, h:ZFB_H};
+      blocked = false;
+      for(var c=0; c<COLLISIONS.length; c++){
+        if(rectOverlap(fbY, COLLISIONS[c])){ blocked = true; break; }
+      }
+      if(!blocked && tryY >= 50 && tryY <= WORLD.h-50) z.y = tryY;
+    } else {
+      // Idle: stand still, reset to neutral frame (mouth closed, plain face)
+      z.fr = 0;
+      z.frT = 0;
+      // Keep current facing — she stays looking the last direction she saw Sarah
     }
-
-    // ── Apply move with collision ──
-    var ZFB_W=50, ZFB_H=30;
-    var tryX = z.x + moveX;
-    var fbX = {x:tryX-ZFB_W/2, y:z.y-ZFB_H/2, w:ZFB_W, h:ZFB_H};
-    var blocked=false;
-    for(var c=0;c<COLLISIONS.length;c++){ if(rectOverlap(fbX,COLLISIONS[c])){ blocked=true; break; } }
-    if(!blocked && tryX>=50 && tryX<=WORLD.w-50) z.x = tryX;
-    else if(z.state==='wander'){ z.dir = Math.random()*Math.PI*2; z.facing = dirToFacing(z.dir); }
-
-    var tryY = z.y + moveY;
-    var fbY = {x:z.x-ZFB_W/2, y:tryY-ZFB_H/2, w:ZFB_W, h:ZFB_H};
-    blocked=false;
-    for(var c=0;c<COLLISIONS.length;c++){ if(rectOverlap(fbY,COLLISIONS[c])){ blocked=true; break; } }
-    if(!blocked && tryY>=50 && tryY<=WORLD.h-50) z.y = tryY;
-    else if(z.state==='wander'){ z.dir = Math.random()*Math.PI*2; z.facing = dirToFacing(z.dir); }
 
     // ── TOUCH DETECTION: game over if zombie touches player ──
-    if(STATE==='playing' && dist < ZOMBIE_TOUCH_RADIUS){
+    if(STATE === 'playing' && dist < ZOMBIE_TOUCH_RADIUS){
       triggerGameOver(z);
       return;
     }
@@ -1254,7 +1185,7 @@ function drawZombies(){
     var z = ZOMBIES[i];
     var x = w2sX(z.x), y = w2sY(z.y);
     // Zombie sprite size in world units (scaled to match Sarah)
-    var spriteH = 190, spriteW = spriteH*0.78;  // similar proportions to Sarah
+    var spriteH = 190, spriteW = spriteH*0.78;
     var sw = spriteW*ZOOM, sh = spriteH*ZOOM;
 
     // shadow on the ground (anchored at z.y, the zombie's feet)
@@ -1263,16 +1194,17 @@ function drawZombies(){
     ctx.beginPath();
     ctx.ellipse(x, y, shW/2, shH/2, 0, 0, Math.PI*2); ctx.fill();
 
-    // sprite
+    // sprite — 4×4 sheet, row = facing direction, col = walk frame (or 0 if idle)
     var img = zombieImgs[z.char];
     var dx = x - sw/2, dy = y - sh;
     if(img && img.complete && img.naturalWidth){
-      var cellW = img.naturalWidth / 2;
-      var cellH = img.naturalHeight / 2;
-      var cell = ZOMBIE_CELL[z.facing] || ZOMBIE_CELL.down;
-      ctx.drawImage(img, cell.c*cellW, cell.r*cellH, cellW, cellH, dx, dy, sw, sh);
+      var cellW = img.naturalWidth / ZOMBIE_SHEET_COLS;
+      var cellH = img.naturalHeight / ZOMBIE_SHEET_ROWS;
+      var row = (ZOMBIE_ROW[z.facing] !== undefined) ? ZOMBIE_ROW[z.facing] : ZOMBIE_ROW.down;
+      var col = (z.state === 'chase') ? (z.fr % ZOMBIE_WALK_LEN) : 0;
+      ctx.drawImage(img, col*cellW, row*cellH, cellW, cellH, dx, dy, sw, sh);
     } else {
-      // Fallback to colored dot while sprite loads
+      // Fallback dot while sprite loads
       var color = z.state==='chase' ? '#CC2200' : '#29ABE2';
       ctx.fillStyle = color;
       ctx.beginPath(); ctx.arc(x, y - sh*0.35, sh*0.18, 0, Math.PI*2); ctx.fill();
