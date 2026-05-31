@@ -774,9 +774,11 @@ var VICTORY = false;
 var ZOMBIES_ENABLED = true;
 
 var ZOMBIE_CHARACTERS = {
-  grumpy:     { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a7444c5deaf6ef798a00_Grumpy_man.png',      name:'Grumpy',     enabled:false },
-  karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen',      enabled:false },
-  complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true  },
+  grumpy:     { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a7444c5deaf6ef798a00_Grumpy_man.png',      name:'Grumpy',     enabled:false, mirrorLeft:false },
+  karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen',      enabled:false, mirrorLeft:false },
+  // mirrorLeft: complainer's "left" row in the source art is mostly right-facing,
+  // so we mirror the right row for left direction to keep her facing correct.
+  complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true,  mirrorLeft:true  },
 };
 // 4×4 sprite sheet layout — each direction is a row, each row has 4 walk frames.
 //   ROW 0: facing DOWN   (4-frame walk cycle)
@@ -1196,13 +1198,26 @@ function drawZombies(){
 
     // sprite — 4×4 sheet, row = facing direction, col = walk frame (or 0 if idle)
     var img = zombieImgs[z.char];
+    var charDef = ZOMBIE_CHARACTERS[z.char];
     var dx = x - sw/2, dy = y - sh;
     if(img && img.complete && img.naturalWidth){
       var cellW = img.naturalWidth / ZOMBIE_SHEET_COLS;
       var cellH = img.naturalHeight / ZOMBIE_SHEET_ROWS;
-      var row = (ZOMBIE_ROW[z.facing] !== undefined) ? ZOMBIE_ROW[z.facing] : ZOMBIE_ROW.down;
+      // Per-character mirrorLeft flag: if true, mirror the right row for left
+      // direction (workaround for sprite sheets where the left row is unreliable).
+      var useMirror = (z.facing === 'left') && charDef && charDef.mirrorLeft;
+      var rowKey = useMirror ? 'right' : z.facing;
+      var row = (ZOMBIE_ROW[rowKey] !== undefined) ? ZOMBIE_ROW[rowKey] : ZOMBIE_ROW.down;
       var col = (z.state === 'chase') ? (z.fr % ZOMBIE_WALK_LEN) : 0;
-      ctx.drawImage(img, col*cellW, row*cellH, cellW, cellH, dx, dy, sw, sh);
+      if(useMirror){
+        ctx.save();
+        ctx.translate(dx + sw, dy);
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, col*cellW, row*cellH, cellW, cellH, 0, 0, sw, sh);
+        ctx.restore();
+      } else {
+        ctx.drawImage(img, col*cellW, row*cellH, cellW, cellH, dx, dy, sw, sh);
+      }
     } else {
       // Fallback dot while sprite loads
       var color = z.state==='chase' ? '#CC2200' : '#29ABE2';
