@@ -1022,10 +1022,45 @@ function triggerVictory(){
   document.getElementById('inv-hud').classList.remove('show');
   document.getElementById('obj-banner').classList.remove('show');
   hideItemCounter();
-  // Show victory screen (placeholder until real end cutscene is wired)
-  var el = document.getElementById('victory-screen');
-  if(el) el.classList.add('show');
   stopGameplayMusic();
+  // Play the final cutscene
+  playFinalCutscene();
+}
+
+function playFinalCutscene(){
+  var cs        = document.getElementById('cutscene-screen');
+  var openVid   = document.getElementById('cutscene-video');
+  var video     = document.getElementById('final-cutscene-video');
+  if(!cs || !video){
+    // Fallback to victory screen if cutscene elements missing
+    var el = document.getElementById('victory-screen');
+    if(el) el.classList.add('show');
+    return;
+  }
+  // Hide opening video, show final video
+  if(openVid){ openVid.style.display = 'none'; }
+  video.style.display = 'block';
+  cs.classList.add('show');
+  video.currentTime = 0;
+  video.muted = IS_MUTED;
+  var playPromise = video.play();
+  if(playPromise && playPromise.catch){
+    playPromise.catch(function(){ /* autoplay block — handled by ended fallback */ });
+  }
+  video.onended = function(){
+    cs.classList.remove('show');
+    showLeadForm();
+  };
+}
+
+function showLeadForm(){
+  var form = document.getElementById('lead-form-screen');
+  if(form){ form.classList.add('show'); }
+  else {
+    // Fallback to old victory screen if form not present
+    var el = document.getElementById('victory-screen');
+    if(el) el.classList.add('show');
+  }
 }
 
 // ── ITEMS: pickup, draw with bobbing float + shadow ──────────────
