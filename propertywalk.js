@@ -711,11 +711,12 @@ pickupSfx.preload = 'auto';
 function playPickupSfx(){
   if(IS_MUTED) return;
   try {
-    // Clone the element so this play doesn't interrupt any earlier ones
-    // that are still ringing out.
-    var clone = pickupSfx.cloneNode();
-    clone.volume = 0.7;
-    var p = clone.play();
+    // Rewind the original (already-unlocked-on-iOS) element. We lose the
+    // ability to overlap two pickups within ~700ms, but that's better than
+    // silence on mobile. Cloned audio elements aren't unlocked on iOS.
+    pickupSfx.currentTime = 0;
+    pickupSfx.volume = 0.7;
+    var p = pickupSfx.play();
     if(p && p.catch){ p.catch(function(){}); }
   } catch(err) { /* silently ignore — pickup still works without sound */ }
 }
@@ -939,25 +940,27 @@ function startGame(){
   // "Start Game" button click → hide menu, kill music, play cutscene.
   // When cutscene ends, beginGameplay() runs.
   STATE = 'cutscene';
-  // ── iOS audio unlock: this click is a user gesture, so any Audio elements
-  //    we touch here become "unlocked" and can be played later without a
-  //    fresh gesture. Touching them here ensures gameplayMusic can play
-  //    after the cutscene on mobile.
+  // ── iOS audio unlock: this click is a user gesture, so we touch each
+  //    Audio element here to register it as user-gesture-approved. iOS
+  //    requires play() to be called inside the gesture handler — even if
+  //    we pause immediately. Once unlocked, subsequent play() calls work.
   try {
-    var unlockPromises = [];
     [menuMusic, gameplayMusic, pickupSfx].forEach(function(audio){
-      if(audio && audio.paused){
-        // play/pause cycle unlocks the element on iOS
+      if(audio){
         audio.muted = true;
         var p = audio.play();
         if(p && p.then){
-          unlockPromises.push(p.then(function(){
+          p.then(function(){
             audio.pause();
             audio.currentTime = 0;
             audio.muted = false;
           }).catch(function(){
             audio.muted = false;
-          }));
+          });
+        } else {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.muted = false;
         }
       }
     });
