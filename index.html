@@ -173,10 +173,34 @@ body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); co
 #item-counter .ic-label { font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.55); }
 #item-counter .ic-val { font-size:18px; color:#F5A623; font-weight:700; }
 #item-counter .ic-val #ic-cur { color:#7CFC9A; }
-.inv-label { font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:0.2em; color:rgba(255,255,255,0.55); text-transform:uppercase; text-align:right; margin-bottom:5px; text-shadow:0 1px 3px rgba(0,0,0,0.8); }
-.inv-slots { display:flex; gap:7px; }
-.inv-slot { width:44px; height:44px; border-radius:10px; background:rgba(0,0,0,0.55); border:1.5px solid rgba(255,255,255,0.18); display:flex; align-items:center; justify-content:center; font-size:22px; backdrop-filter:blur(4px); }
-.inv-slot.filled { background:rgba(41,171,226,0.85); border-color:#fff; box-shadow:0 4px 12px rgba(41,171,226,0.5); animation:pop 0.4s; }
+.inv-label { font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:0.2em; color:rgba(255,255,255,0.55); text-transform:uppercase; text-align:right; margin-bottom:6px; text-shadow:0 1px 3px rgba(0,0,0,0.8); }
+.inv-bar { position:relative; width:260px; height:22px; background:rgba(0,0,0,0.55); border:1.5px solid rgba(255,255,255,0.18); border-radius:6px; overflow:hidden; backdrop-filter:blur(4px); }
+/* Filled portion — animated width, gradient stays cool-to-hot as it grows */
+.inv-bar-fill {
+  position:absolute; left:0; top:0; bottom:0;
+  width:0%;
+  background:linear-gradient(90deg,
+    #4A90E2 0%,    /* faded blue start */
+    #29ABE2 30%,   /* sky blue */
+    #5EE2A8 55%,   /* mint */
+    #F5C842 80%,   /* gold */
+    #F59E0B 100%   /* hot amber */
+  );
+  transition:width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s;
+  box-shadow:none;
+}
+.inv-bar-fill.glow { box-shadow:0 0 16px rgba(245,158,11,0.7); }
+/* Segment dividers laid over the bar so it reads as 5 connected cells */
+.inv-bar-segments { position:absolute; inset:0; display:flex; pointer-events:none; }
+.inv-seg { flex:1; border-right:1px solid rgba(255,255,255,0.15); position:relative; }
+.inv-seg:last-child { border-right:none; }
+/* Pulse a segment briefly when its item is collected */
+.inv-seg.filled::after {
+  content:''; position:absolute; inset:0;
+  background:rgba(255,255,255,0.35);
+  animation:segFlash 0.6s ease-out forwards;
+}
+@keyframes segFlash { 0%{opacity:1;} 100%{opacity:0;} }
 @keyframes pop { 0%{transform:scale(0.4);} 60%{transform:scale(1.2);} 100%{transform:scale(1);} }
 
 /* Resign / game-over screen */
@@ -394,17 +418,20 @@ body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); co
   </div>
   <div id="inv-hud">
     <div class="inv-label">Inventory</div>
-    <div class="inv-slots">
-      <div class="inv-slot" id="inv-key"></div>
-      <div class="inv-slot" id="inv-phone"></div>
-      <div class="inv-slot" id="inv-coffee"></div>
-      <div class="inv-slot" id="inv-cash"></div>
-      <div class="inv-slot" id="inv-package"></div>
+    <div class="inv-bar">
+      <div class="inv-bar-fill" id="inv-bar-fill"></div>
+      <div class="inv-bar-segments">
+        <div class="inv-seg" id="inv-key"></div>
+        <div class="inv-seg" id="inv-phone"></div>
+        <div class="inv-seg" id="inv-coffee"></div>
+        <div class="inv-seg" id="inv-cash"></div>
+        <div class="inv-seg" id="inv-package"></div>
+      </div>
     </div>
   </div>
   <div class="dbg-bar" id="dbg-bar" style="display:none;">
     <span class="dbg-coord">world x:<b id="cx">0</b> y:<b id="cy">0</b></span>
-    <label>zoom <input type="range" id="zoom" min="0.3" max="4" step="0.1" value="1.1"> <b id="zoom-val" style="color:#7CFC9A;min-width:32px;text-align:right;">1.1</b></label>
+    <label>zoom <input type="range" id="zoom" min="0.3" max="4" step="0.1" value="0.7"> <b id="zoom-val" style="color:#7CFC9A;min-width:32px;text-align:right;">0.7</b></label>
     <label>speed <input type="range" id="speed" min="2" max="12" step="0.5" value="5"> <b id="speed-val" style="color:#7CFC9A;min-width:32px;text-align:right;">5</b></label>
     <button class="dbg-btn" id="btn-coll" onclick="toggleColl()">Collision: ON</button>
     <span class="dbg-coord" id="mapstatus" style="color:#F5A623;">loading map…</span>
