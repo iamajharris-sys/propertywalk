@@ -870,6 +870,9 @@ var itemsSheet = new Image(); itemsSheet.src = ITEMS_SHEET_URL;
 var ITEMS = [];
 // Inventory: which item ids have been picked up
 var INV = { key:false, phone:false, coffee:false, cash:false, package:false };
+// Pickup order — needed so the chain-link inventory bar fills left-to-right
+// regardless of which item the player happened to grab first.
+var PICKUP_ORDER = [];
 
 // Victory state — set true when all 5 items collected, triggers end screen.
 var VICTORY = false;
@@ -999,31 +1002,34 @@ function dirToFacing(angle){
 
 function resetInventory(){
   INV.key=false; INV.phone=false; INV.coffee=false; INV.cash=false; INV.package=false;
+  PICKUP_ORDER.length = 0;
   updateInventoryHUD();
 }
 
 function updateInventoryHUD(){
-  var ids = ['key','phone','coffee','cash','package'];
-  var collected = 0;
-  ids.forEach(function(id, i){
-    var el = document.getElementById('inv-'+id);
+  var collected = PICKUP_ORDER.length;
+  var slotIds = ['inv-key','inv-phone','inv-coffee','inv-cash','inv-package'];
+  var icons = { key:'🔑', phone:'📞', coffee:'☕', cash:'💵', package:'📦' };
+
+  slotIds.forEach(function(slotId, i){
+    var el = document.getElementById(slotId);
     if(!el) return;
-    if(INV[id]){
+    var iconSpan = el.querySelector('.seg-icon');
+    if(i < collected){
       el.classList.add('filled');
-      collected++;
+      if(iconSpan && PICKUP_ORDER[i]) iconSpan.textContent = icons[PICKUP_ORDER[i]];
     } else {
       el.classList.remove('filled');
+      if(iconSpan) iconSpan.textContent = '';
     }
   });
-  // Bridges fill in left-to-right collection order, regardless of which
-  // specific item was collected — chain visually grows by count.
+  // Bridge i fills once collected > i (gold flows continuously left-to-right)
   for(var i=1; i<=4; i++){
     var bridge = document.getElementById('bridge-'+i);
     if(!bridge) continue;
-    if(collected >= i+1){ bridge.classList.add('filled'); }
-    else                { bridge.classList.remove('filled'); }
+    if(collected > i){ bridge.classList.add('filled'); }
+    else             { bridge.classList.remove('filled'); }
   }
-  // Drive the chain-wide glow intensity (1..5)
   var bar = document.getElementById('inv-bar');
   if(bar) bar.setAttribute('data-filled', String(collected));
 }
@@ -1244,6 +1250,7 @@ function updateItems(){
     if(Math.sqrt(dx*dx+dy*dy) < 60){
       it.taken = true;
       INV[it.id] = true;
+      PICKUP_ORDER.push(it.id);
       playPickupSfx();
       // Start celebration animation — restarts cleanly if already celebrating
       P.celebrating = true;
