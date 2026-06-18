@@ -151,7 +151,7 @@ body.cta-active { background: #000; }
 .menu-howto { margin-top:22px; font-family:'IBM Plex Mono',monospace; font-size:10px; line-height:1.8; color:rgba(255,255,255,0.4); letter-spacing:0.05em; }
 
 /* Inventory HUD (bottom-right) */
-#inv-hud { position:absolute; right:14px; bottom:14px; z-index:25; display:none; pointer-events:none; }
+#inv-hud { position:absolute; right:14px; top:580px; z-index:25; display:none; pointer-events:none; }
 #inv-hud.show { display:block; }
 
 /* Objective banner — slides in on game start, auto-hides after ~8s */
@@ -161,7 +161,7 @@ body.cta-active { background: #000; }
 @keyframes objFade { to{opacity:0;} }
 
 /* Persistent item counter (bottom-left) */
-#item-counter { position:absolute; left:14px; bottom:14px; z-index:25; display:none; padding:8px 14px; background:rgba(26,43,74,0.85); border:1.5px solid rgba(41,171,226,0.35); border-radius:8px; font-family:'IBM Plex Mono',monospace; pointer-events:none; }
+#item-counter { position:absolute; left:14px; top:610px; z-index:25; display:none; padding:8px 14px; background:rgba(26,43,74,0.85); border:1.5px solid rgba(41,171,226,0.35); border-radius:8px; font-family:'IBM Plex Mono',monospace; pointer-events:none; }
 #item-counter.show { display:flex; align-items:center; gap:10px; }
 #item-counter .ic-label { font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.55); }
 #item-counter .ic-val { font-size:18px; color:#F5A623; font-weight:700; }
@@ -395,7 +395,7 @@ body.cta-active { background: #000; }
       <div class="inv-slot" id="inv-package"></div>
     </div>
   </div>
-  <div class="dbg-bar">
+  <div class="dbg-bar" id="dbg-bar" style="display:none;">
     <span class="dbg-coord">world x:<b id="cx">0</b> y:<b id="cy">0</b></span>
     <label>zoom <input type="range" id="zoom" min="0.3" max="4" step="0.1" value="1.1"></label>
     <label>speed <input type="range" id="speed" min="2" max="12" step="0.5" value="5"></label>
@@ -404,7 +404,7 @@ body.cta-active { background: #000; }
     <div style="flex-basis:100%; height:0;"></div>
     <button class="dbg-btn" id="btn-edit" onclick="toggleEdit()">✎ Edit: OFF</button>
   </div>
-  <div class="dbg-edit-bar" id="edit-bar">
+  <div class="dbg-edit-bar" id="edit-bar" style="display:none;">
     <span class="edit-hint">drag to move · drag corners to resize · click empty to deselect</span>
     <span id="save-status" style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#7CFC9A;letter-spacing:0.05em;opacity:0.5;transition:opacity 0.3s;">—</span>
     <button class="dbg-btn" onclick="addBox()">+ Add Box</button>
@@ -416,6 +416,12 @@ body.cta-active { background: #000; }
 </div>
 </div>
 
+<script>
+  // Show edit controls only when URL has #edit (so AJ can still access the editor)
+  if(window.location.hash === '#edit'){
+    document.getElementById('dbg-bar').style.display = '';
+  }
+</script>
 <script src="/propertywalk.js"></script>
 </body>
 </html>
