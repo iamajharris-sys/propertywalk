@@ -194,58 +194,75 @@ body { font-family: 'Inter', sans-serif; background: #0a0a14; color: #fff; min-h
 /* MONKEY BUSINESS CTA — appears after final cutscene */
 #quote-cta-screen {
   position:absolute; top:0; left:0; right:0; bottom:0;
-  background:rgba(15,30,45,0.96);
-  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  background:#000;
   display:none; align-items:center; justify-content:center;
   z-index:70; padding:24px;
 }
-#quote-cta-screen.show { display:flex; animation:resignFade 0.6s ease-out; }
-.quote-cta-inner { text-align:center; max-width:460px; }
+#quote-cta-screen.show { display:flex; }
+.quote-cta-inner { text-align:center; max-width:520px; }
+
+/* Stage each element to start hidden + below resting position, then rise in */
+.cta-eyebrow, .cta-headline, .cta-sub, .cta-btn, .cta-logo {
+  opacity:0;
+  transform:translateY(20px);
+}
+#quote-cta-screen.show .cta-eyebrow  { animation:ctaRise 1.2s ease-out 0.6s forwards; }
+#quote-cta-screen.show .cta-headline { animation:ctaRise 1.4s ease-out 1.4s forwards; }
+#quote-cta-screen.show .cta-sub      { animation:ctaRise 1.2s ease-out 2.6s forwards; }
+#quote-cta-screen.show .cta-btn      { animation:ctaRise 1.0s ease-out 4.0s forwards; }
+#quote-cta-screen.show .cta-logo     { animation:ctaRise 1.0s ease-out 4.0s forwards; }
+@keyframes ctaRise {
+  to { opacity:1; transform:translateY(0); }
+}
+
 .cta-eyebrow {
-  font-family:'IBM Plex Mono',monospace; font-size:10px;
-  letter-spacing:0.3em; color:rgba(255,255,255,0.4);
-  text-transform:uppercase; margin-bottom:18px;
+  font-family:'IBM Plex Mono',monospace; font-size:11px;
+  letter-spacing:0.35em; color:rgba(255,255,255,0.45);
+  text-transform:uppercase; margin-bottom:22px;
 }
 .cta-headline {
-  font-family:'Bebas Neue',sans-serif; font-size:54px; line-height:1.0;
-  color:#fff; margin-bottom:18px; letter-spacing:0.02em;
+  font-family:'Bebas Neue',sans-serif; font-size:62px; line-height:1.0;
+  color:#fff; margin-bottom:22px; letter-spacing:0.02em;
 }
 .cta-headline span { color:#29ABE2; }
 .cta-sub {
-  font-size:15px; color:rgba(255,255,255,0.72); margin-bottom:28px;
-  line-height:1.6;
+  font-size:16px; color:rgba(255,255,255,0.82); margin-bottom:38px;
+  line-height:1.65; font-weight:400;
 }
 .cta-btn {
   display:inline-block;
-  background:#29ABE2; color:#1A2B4A;
+  background:#29ABE2; color:#0a0a14;
   text-decoration:none;
-  padding:18px 48px;
+  padding:20px 52px;
   font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:700;
-  letter-spacing:0.18em; text-transform:uppercase;
+  letter-spacing:0.2em; text-transform:uppercase;
   border:none; border-radius:8px;
   cursor:pointer;
-  box-shadow:0 10px 28px rgba(41,171,226,0.45);
-  transition:transform 0.15s, box-shadow 0.15s;
-  animation:ctaPulse 1.8s ease-in-out infinite;
+  box-shadow:0 12px 36px rgba(41,171,226,0.5);
+  transition:transform 0.2s, box-shadow 0.2s;
 }
 .cta-btn:hover {
-  transform:translateY(-2px);
-  box-shadow:0 14px 32px rgba(41,171,226,0.6);
+  transform:translateY(-3px);
+  box-shadow:0 18px 44px rgba(41,171,226,0.7);
+}
+/* Button glow only kicks in after fade-in completes */
+#quote-cta-screen.show .cta-btn {
+  animation:ctaRise 1.0s ease-out 4.0s forwards, ctaPulse 2.4s ease-in-out 5.0s infinite;
 }
 @keyframes ctaPulse {
-  0%,100% { box-shadow:0 10px 28px rgba(41,171,226,0.45); }
-  50%     { box-shadow:0 10px 36px rgba(41,171,226,0.75); }
+  0%,100% { box-shadow:0 12px 36px rgba(41,171,226,0.5); }
+  50%     { box-shadow:0 14px 44px rgba(41,171,226,0.85); }
 }
-.cta-secondary {
-  display:block; margin:20px auto 0;
-  background:transparent; color:rgba(255,255,255,0.55);
-  border:none; cursor:pointer;
-  font-family:'IBM Plex Mono',monospace; font-size:11px;
-  letter-spacing:0.12em; text-transform:uppercase;
-  padding:8px 16px;
-  transition:color 0.15s;
+.cta-logo {
+  display:block;
+  margin:32px auto 0;
+  max-width:160px;
+  width:auto;
+  height:auto;
+  user-select:none;
+  -webkit-user-drag:none;
+  pointer-events:none;
 }
-.cta-secondary:hover { color:#fff; }
 </style>
 </head>
 <body>
@@ -321,9 +338,9 @@ body { font-family: 'Inter', sans-serif; background: #0a0a14; color: #fff; min-h
     <div class="quote-cta-inner">
       <div class="cta-eyebrow">Clean Towers</div>
       <div class="cta-headline">when monkey business<br>is <span>sometimes okay</span></div>
-      <div class="cta-sub">protect your building from nagging tenants.<br>let our gorilla handle the windows.</div>
+      <div class="cta-sub">protect your building from nagging tenants.<br>let our gorilla handle your windows.</div>
       <a class="cta-btn" href="https://www.cleantowers.com/quote-my-building" target="_self" rel="noopener">Get a Quote →</a>
-      <button class="cta-secondary" onclick="returnToMenu()">Play Again</button>
+      <img class="cta-logo" src="/Clean.Towers_Main-01.png" alt="Clean Towers" />
     </div>
   </div>
 
