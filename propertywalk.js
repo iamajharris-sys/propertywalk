@@ -643,24 +643,8 @@ function toggleMute(e){
     menuMusic.volume = MUSIC_VOL;
     var p = menuMusic.play();
     if(p && p.catch){ p.catch(function(){}); }
-    // ── iOS audio unlock for gameplayMusic + pickupSfx ──
-    // This tap is a user gesture, so silently play/pause both to unlock
-    // them for later. Otherwise they stay blocked on mobile.
-    try {
-      [gameplayMusic, pickupSfx].forEach(function(audio){
-        if(audio && audio.paused){
-          audio.muted = true;
-          var gp = audio.play();
-          if(gp && gp.then){
-            gp.then(function(){
-              audio.pause();
-              audio.currentTime = 0;
-              audio.muted = false;
-            }).catch(function(){ audio.muted = false; });
-          }
-        }
-      });
-    } catch(err) {}
+    // NOTE: iOS audio unlock for gameplay sounds happens in startGame(),
+    // not here — keeps gameplay audio isolated from the menu.
   }
 }
 
