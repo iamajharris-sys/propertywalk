@@ -214,7 +214,7 @@ function loadMap(){
 
 // ── CANVAS / CAMERA ─────────────────────────────────────────────────
 var canvas, ctx, VW, VH;        // viewport (canvas) size in CSS px
-var ZOOM = 1.1;                 // how zoomed-in the camera is
+var ZOOM = 0.7;                 // how zoomed-in the camera is
 var cam = { x:0, y:0 };         // camera top-left in WORLD coords
 
 var P = { x:1024, y:1024, w:72, h:152, facing:'down', moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0, celebrating:false, celebrateStart:0 };
@@ -856,6 +856,14 @@ var ITEM_COLORS = {
   package: '#A0522D',  // cardboard brown
 };
 var ITEM_EMOJI  = { key:'🔑', phone:'📞', coffee:'☕', cash:'💵', package:'📦' };
+// Quick affirmation shown in the objective banner each time an item is collected
+var ITEM_PICKUP_MSG = {
+  key:     "You've collected your master key!",
+  phone:   "You've got your phone — no more excuses!",
+  coffee:  "Coffee in hand. Energy unlocked.",
+  cash:    "Rent money collected!",
+  package: "Package retrieved. Almost there...",
+};
 var itemsSheet = new Image(); itemsSheet.src = ITEMS_SHEET_URL;
 
 // Item world objects: each {id, x, y, taken:false, bobT}
@@ -936,11 +944,21 @@ function randomWalkablePoint(){
   return {x: WORLD.w*0.5, y: WORLD.h*0.4};
 }
 
+// Fixed spawn coordinates for each item (world pixels, 2048x2048 map).
+// Marketing tool — no randomness so players always hit reachable positions.
+var ITEM_SPAWNS = {
+  key:     {x:1258, y:1549},
+  phone:   {x:1683, y:979},
+  coffee:  {x:1383, y:652},
+  cash:    {x:1000, y:774},
+  package: {x:472,  y:594},
+};
+
 function spawnItems(){
   ITEMS = [];
   var ids = ['key','phone','coffee','cash','package'];
   ids.forEach(function(id){
-    var p = randomWalkablePoint();
+    var p = ITEM_SPAWNS[id];
     ITEMS.push({ id:id, x:p.x, y:p.y, taken:false, bobT:Math.random()*Math.PI*2 });
   });
 }
@@ -985,17 +1003,26 @@ function resetInventory(){
 }
 
 function updateInventoryHUD(){
-  ['key','phone','coffee','cash','package'].forEach(function(id){
+  var ids = ['key','phone','coffee','cash','package'];
+  var collected = 0;
+  ids.forEach(function(id){
     var el = document.getElementById('inv-'+id);
     if(!el) return;
     if(INV[id]){
       el.classList.add('filled');
-      el.textContent = ITEM_EMOJI[id];
+      collected++;
     } else {
       el.classList.remove('filled');
-      el.textContent = '';
     }
   });
+  // Drive the bar fill width — each item = 20% of the bar
+  var fill = document.getElementById('inv-bar-fill');
+  if(fill){
+    var pct = (collected / ids.length) * 100;
+    fill.style.width = pct + '%';
+    // Glow once we hit 60%+ (3+ items) — bar lights up as urgency builds
+    fill.classList.toggle('glow', collected >= 3);
+  }
 }
 
 // ── OBJECTIVE BANNER + ITEM COUNTER ─────────────────────────────
@@ -1206,6 +1233,8 @@ function updateItems(){
       spawnCelebrationSparkles(P.x, P.y);
       updateInventoryHUD();
       updateItemCounter();
+      // Pickup message — quick affirmation per item collected
+      showObjectiveBanner(ITEM_PICKUP_MSG[it.id]);
       // Check if all 5 collected -> victory
       if(INV.key && INV.phone && INV.coffee && INV.cash && INV.package){
         setTimeout(triggerVictory, 250);
