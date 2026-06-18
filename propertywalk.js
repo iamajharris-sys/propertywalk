@@ -56,19 +56,98 @@ var mapImg = new Image(); var mapReady=false, mapFailed=false;
 var WORLD = { w: 2048, h: 2048 };
 
 // ── COLLISION BOXES (world-pixel coords for the 2048x2048 New Map) ──
-// TEMPORARY — stripped down to just the 4 outer walls so we can test zombie
-// behavior without them getting stuck on interior furniture. Full collision
-// set will be re-baked once zombie AI is dialed in.
+// First-pass collision set generated from visual analysis of New_Map.png.
+// AJ will fine-tune positions in the live editor as needed.
 var COLLISION_DEFAULTS = [
-  {x:0,    y:0,    w:2048, h:60},    // top wall
-  {x:0,    y:1990, w:2048, h:60},    // bottom wall
-  {x:0,    y:0,    w:60,   h:2048},  // left wall
-  {x:1988, y:0,    w:60,   h:2048},  // right wall
+  // Outer wall frame (octagonal — straight edges + diagonal corners)
+  {x:260,  y:40,   w:1530, h:40},    // top wall
+  {x:260,  y:1970, w:1530, h:40},    // bottom wall
+  {x:40,   y:260,  w:40,   h:1530},  // left wall
+  {x:1970, y:260,  w:40,   h:1530},  // right wall
+  {x:80,   y:80,   w:210,  h:210},   // corner TL diagonal
+  {x:1760, y:80,   w:210,  h:210},   // corner TR diagonal
+  {x:80,   y:1760, w:210,  h:210},   // corner BL diagonal
+  {x:1760, y:1760, w:210,  h:210},   // corner BR diagonal
+
+  // Top-left office (desk, chair, partition, bookshelf)
+  {x:100,  y:80,   w:440,  h:80},    // office top wall
+  {x:140,  y:120,  w:250,  h:140},   // L-shaped desk top
+  {x:140,  y:260,  w:110,  h:80},    // desk left return
+  {x:340,  y:260,  w:120,  h:50},    // monitor stand
+  {x:120,  y:350,  w:140,  h:110},   // side cabinet/chair
+  {x:110,  y:260,  w:50,   h:140},   // office partition
+  {x:100,  y:480,  w:440,  h:40},    // office bottom wall
+  {x:290,  y:80,   w:150,  h:90},    // top bookshelf
+
+  // Top center lobby dividers + bench
+  {x:540,  y:80,   w:40,   h:380},   // left lobby wall
+  {x:1460, y:80,   w:40,   h:280},   // right lobby wall
+  {x:860,  y:220,  w:280,  h:50},    // red bench
+
+  // Top-right lounge (TV, sofa, chair)
+  {x:1500, y:100,  w:420,  h:40},    // lounge top wall
+  {x:1500, y:420,  w:420,  h:40},    // lounge bottom wall
+  {x:1620, y:150,  w:140,  h:100},   // flat screen + console
+  {x:1540, y:220,  w:260,  h:90},    // sofa + rug
+  {x:1840, y:230,  w:100,  h:140},   // side chair right
+
+  // Mid-left workspace (multi-monitor desk)
+  {x:100,  y:540,  w:440,  h:40},    // workspace top wall
+  {x:120,  y:580,  w:280,  h:180},   // multi-monitor desk
+  {x:120,  y:780,  w:140,  h:80},    // chair area
+  {x:100,  y:880,  w:440,  h:40},    // workspace bottom wall
+
+  // Central marble plaza walls + statues + planters
+  {x:400,  y:540,  w:220,  h:120},   // upper diag wall left
+  {x:1280, y:540,  w:260,  h:120},   // upper diag wall right
+  {x:850,  y:620,  w:80,   h:120},   // left statue + base
+  {x:1080, y:620,  w:80,   h:120},   // right statue + base
+  {x:940,  y:620,  w:120,  h:80},    // painting partition
+  {x:400,  y:840,  w:280,  h:120},   // lower diag wall left
+  {x:1280, y:840,  w:260,  h:120},   // lower diag wall right
+  {x:860,  y:860,  w:120,  h:100},   // center planter left
+  {x:1050, y:860,  w:120,  h:100},   // center planter right
+
+  // Mid-right gym (treadmills, bench, weights)
+  {x:1460, y:480,  w:40,   h:420},   // gym left wall
+  {x:1500, y:500,  w:420,  h:40},    // gym top wall
+  {x:1530, y:540,  w:140,  h:200},   // treadmill 1
+  {x:1720, y:540,  w:140,  h:200},   // treadmill 2
+  {x:1500, y:780,  w:200,  h:100},   // gym bench
+  {x:1740, y:780,  w:200,  h:100},   // weight rack
+  {x:1500, y:900,  w:420,  h:40},    // gym bottom wall
+
+  // Center atrium seating
+  {x:820,  y:1100, w:420,  h:180},   // circular sofa + table
+  {x:900,  y:1320, w:260,  h:80},    // lower curved bench
+
+  // Lower-left storage room (shelf, boxes, crates)
+  {x:100,  y:1200, w:440,  h:40},    // storage top wall
+  {x:100,  y:1660, w:440,  h:40},    // storage bottom wall
+  {x:120,  y:1240, w:280,  h:80},    // shelf top
+  {x:120,  y:1380, w:80,   h:120},   // box stack left
+  {x:220,  y:1380, w:300,  h:120},   // plant + cabinet
+  {x:120,  y:1540, w:280,  h:80},    // crate row
+
+  // Lower-right lounge with fireplace
+  {x:1500, y:1200, w:420,  h:40},    // lounge top wall
+  {x:1500, y:1740, w:420,  h:40},    // lounge bottom wall
+  {x:1500, y:1240, w:120,  h:200},   // left chair set
+  {x:1640, y:1280, w:280,  h:80},    // fireplace mantle
+  {x:1520, y:1500, w:380,  h:160},   // long sofa
+
+  // Roof access door + side columns + bottom statues
+  {x:820,  y:1700, w:420,  h:80},    // roof access frame top
+  {x:820,  y:1700, w:80,   h:260},   // door left column
+  {x:1180, y:1700, w:60,   h:260},   // door right column
+  {x:690,  y:1640, w:80,   h:140},   // left bottom statue
+  {x:1240, y:1640, w:80,   h:140},   // right bottom statue
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
-// v4 = stripped to 4 outer walls only for zombie testing
-var LS_KEY = 'pw_collisions_v4';
+// v5 = full first-pass collision set (62 boxes) — bumped key to flush
+//      the stripped 4-wall v4 cache from any returning users
+var LS_KEY = 'pw_collisions_v5';
 var COLLISIONS = [];
 var LS_OK = true;  // becomes false if localStorage is blocked (e.g. preview sandbox)
 function loadCollisions(){
