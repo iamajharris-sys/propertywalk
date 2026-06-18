@@ -56,98 +56,91 @@ var mapImg = new Image(); var mapReady=false, mapFailed=false;
 var WORLD = { w: 2048, h: 2048 };
 
 // ── COLLISION BOXES (world-pixel coords for the 2048x2048 New Map) ──
-// First-pass collision set generated from visual analysis of New_Map.png.
-// AJ will fine-tune positions in the live editor as needed.
+// v6 — AJ's hand-tuned export covering interior walls, furniture, statues,
+// planters, and the roof-access door frame. 76 boxes.
 var COLLISION_DEFAULTS = [
-  // Outer wall frame (octagonal — straight edges + diagonal corners)
-  {x:260,  y:40,   w:1530, h:40},    // top wall
-  {x:260,  y:1970, w:1530, h:40},    // bottom wall
-  {x:40,   y:260,  w:40,   h:1530},  // left wall
-  {x:1970, y:260,  w:40,   h:1530},  // right wall
-  {x:80,   y:80,   w:210,  h:210},   // corner TL diagonal
-  {x:1760, y:80,   w:210,  h:210},   // corner TR diagonal
-  {x:80,   y:1760, w:210,  h:210},   // corner BL diagonal
-  {x:1760, y:1760, w:210,  h:210},   // corner BR diagonal
-
-  // Top-left office (desk, chair, partition, bookshelf)
-  {x:100,  y:80,   w:440,  h:80},    // office top wall
-  {x:140,  y:120,  w:250,  h:140},   // L-shaped desk top
-  {x:140,  y:260,  w:110,  h:80},    // desk left return
-  {x:340,  y:260,  w:120,  h:50},    // monitor stand
-  {x:120,  y:350,  w:140,  h:110},   // side cabinet/chair
-  {x:110,  y:260,  w:50,   h:140},   // office partition
-  {x:100,  y:480,  w:440,  h:40},    // office bottom wall
-  {x:290,  y:80,   w:150,  h:90},    // top bookshelf
-
-  // Top center lobby dividers + bench
-  {x:540,  y:80,   w:40,   h:380},   // left lobby wall
-  {x:1460, y:80,   w:40,   h:280},   // right lobby wall
-  {x:860,  y:220,  w:280,  h:50},    // red bench
-
-  // Top-right lounge (TV, sofa, chair)
-  {x:1500, y:100,  w:420,  h:40},    // lounge top wall
-  {x:1500, y:420,  w:420,  h:40},    // lounge bottom wall
-  {x:1620, y:150,  w:140,  h:100},   // flat screen + console
-  {x:1540, y:220,  w:260,  h:90},    // sofa + rug
-  {x:1840, y:230,  w:100,  h:140},   // side chair right
-
-  // Mid-left workspace (multi-monitor desk)
-  {x:100,  y:540,  w:440,  h:40},    // workspace top wall
-  {x:120,  y:580,  w:280,  h:180},   // multi-monitor desk
-  {x:120,  y:780,  w:140,  h:80},    // chair area
-  {x:100,  y:880,  w:440,  h:40},    // workspace bottom wall
-
-  // Central marble plaza walls + statues + planters
-  {x:400,  y:540,  w:220,  h:120},   // upper diag wall left
-  {x:1280, y:540,  w:260,  h:120},   // upper diag wall right
-  {x:850,  y:620,  w:80,   h:120},   // left statue + base
-  {x:1080, y:620,  w:80,   h:120},   // right statue + base
-  {x:940,  y:620,  w:120,  h:80},    // painting partition
-  {x:400,  y:840,  w:280,  h:120},   // lower diag wall left
-  {x:1280, y:840,  w:260,  h:120},   // lower diag wall right
-  {x:860,  y:860,  w:120,  h:100},   // center planter left
-  {x:1050, y:860,  w:120,  h:100},   // center planter right
-
-  // Mid-right gym (treadmills, bench, weights)
-  {x:1460, y:480,  w:40,   h:420},   // gym left wall
-  {x:1500, y:500,  w:420,  h:40},    // gym top wall
-  {x:1530, y:540,  w:140,  h:200},   // treadmill 1
-  {x:1720, y:540,  w:140,  h:200},   // treadmill 2
-  {x:1500, y:780,  w:200,  h:100},   // gym bench
-  {x:1740, y:780,  w:200,  h:100},   // weight rack
-  {x:1500, y:900,  w:420,  h:40},    // gym bottom wall
-
-  // Center atrium seating
-  {x:820,  y:1100, w:420,  h:180},   // circular sofa + table
-  {x:900,  y:1320, w:260,  h:80},    // lower curved bench
-
-  // Lower-left storage room (shelf, boxes, crates)
-  {x:100,  y:1200, w:440,  h:40},    // storage top wall
-  {x:100,  y:1660, w:440,  h:40},    // storage bottom wall
-  {x:120,  y:1240, w:280,  h:80},    // shelf top
-  {x:120,  y:1380, w:80,   h:120},   // box stack left
-  {x:220,  y:1380, w:300,  h:120},   // plant + cabinet
-  {x:120,  y:1540, w:280,  h:80},    // crate row
-
-  // Lower-right lounge with fireplace
-  {x:1500, y:1200, w:420,  h:40},    // lounge top wall
-  {x:1500, y:1740, w:420,  h:40},    // lounge bottom wall
-  {x:1500, y:1240, w:120,  h:200},   // left chair set
-  {x:1640, y:1280, w:280,  h:80},    // fireplace mantle
-  {x:1520, y:1500, w:380,  h:160},   // long sofa
-
-  // Roof access door + side columns + bottom statues
-  {x:820,  y:1700, w:420,  h:80},    // roof access frame top
-  {x:820,  y:1700, w:80,   h:260},   // door left column
-  {x:1180, y:1700, w:60,   h:260},   // door right column
-  {x:690,  y:1640, w:80,   h:140},   // left bottom statue
-  {x:1240, y:1640, w:80,   h:140},   // right bottom statue
+  {x:290,  y:178,  w:1425, h:20},
+  {x:140,  y:1780, w:1667, h:50},
+  {x:103,  y:500,  w:77,   h:1530},
+  {x:1843, y:250,  w:40,   h:1530},
+  {x:133,  y:97,   w:273,  h:320},
+  {x:700,  y:657,  w:83,   h:220},
+  {x:897,  y:1263, w:70,   h:93},
+  {x:1620, y:1680, w:157,  h:40},
+  {x:130,  y:100,  w:440,  h:80},
+  {x:1610, y:983,  w:147,  h:47},
+  {x:140,  y:260,  w:110,  h:80},
+  {x:340,  y:260,  w:120,  h:50},
+  {x:120,  y:350,  w:140,  h:110},
+  {x:110,  y:260,  w:50,   h:140},
+  {x:190,  y:413,  w:97,   h:113},
+  {x:290,  y:80,   w:150,  h:90},
+  {x:800,  y:135,  w:37,   h:320},
+  {x:1377, y:153,  w:40,   h:280},
+  {x:807,  y:107,  w:280,  h:50},
+  {x:1447, y:157,  w:420,  h:40},
+  {x:1387, y:280,  w:37,   h:250},
+  {x:1620, y:150,  w:140,  h:100},
+  {x:1540, y:220,  w:260,  h:90},
+  {x:1840, y:230,  w:100,  h:140},
+  {x:180,  y:470,  w:103,  h:120},
+  {x:120,  y:613,  w:243,  h:203},
+  {x:120,  y:780,  w:140,  h:80},
+  {x:877,  y:1487, w:290,  h:57},
+  {x:185,  y:927,  w:240,  h:227},
+  {x:740,  y:793,  w:73,   h:60},
+  {x:598,  y:547,  w:152,  h:123},
+  {x:1157, y:617,  w:83,   h:127},
+  {x:827,  y:380,  w:440,  h:93},
+  {x:767,  y:753,  w:83,   h:87},
+  {x:1117, y:830,  w:390,  h:90},
+  {x:1000, y:853,  w:37,   h:180},
+  {x:1320, y:1143, w:103,  h:87},
+  {x:1517, y:583,  w:337,  h:60},
+  {x:1467, y:613,  w:420,  h:40},
+  {x:580,  y:1510, w:23,   h:273},
+  {x:1157, y:510,  w:110,  h:23},
+  {x:1440, y:870,  w:20,   h:317},
+  {x:1740, y:780,  w:200,  h:100},
+  {x:1183, y:620,  w:123,  h:113},
+  {x:833,  y:1087, w:60,   h:140},
+  {x:670,  y:1443, w:67,   h:73},
+  {x:763,  y:1143, w:37,   h:70},
+  {x:897,  y:1617, w:370,  h:350},
+  {x:237,  y:1343, w:300,  h:87},
+  {x:1380, y:1510, w:90,   h:263},
+  {x:220,  y:1410, w:263,  h:140},
+  {x:940,  y:1253, w:87,   h:73},
+  {x:170,  y:1310, w:420,  h:40},
+  {x:1500, y:1740, w:420,  h:40},
+  {x:1113, y:1100, w:113,  h:120},
+  {x:1533, y:1273, w:280,  h:70},
+  {x:1513, y:1343, w:357,  h:80},
+  {x:100,  y:1073, w:320,  h:73},
+  {x:643,  y:1467, w:50,   h:303},
+  {x:1180, y:1700, w:60,   h:260},
+  {x:757,  y:1633, w:80,   h:140},
+  {x:1337, y:1497, w:87,   h:280},
+  {x:807,  y:714,  w:97,   h:70},
+  {x:767,  y:644,  w:93,   h:87},
+  {x:621,  y:781,  w:90,   h:90},
+  {x:607,  y:684,  w:147,  h:107},
+  {x:851,  y:1321, w:67,   h:107},
+  {x:991,  y:1374, w:67,   h:53},
+  {x:1121, y:1341, w:87,   h:83},
+  {x:1601, y:1457, w:163,  h:127},
+  {x:1524, y:631,  w:347,  h:87},
+  {x:714,  y:1174, w:57,   h:73},
+  {x:664,  y:1241, w:47,   h:37},
+  {x:537,  y:1151, w:83,   h:147},
+  {x:597,  y:1274, w:70,   h:43},
+  {x:1244, y:151,  w:30,   h:387},
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
-// v5 = full first-pass collision set (62 boxes) — bumped key to flush
-//      the stripped 4-wall v4 cache from any returning users
-var LS_KEY = 'pw_collisions_v5';
+// v6 = AJ's first hand-tuned export (76 boxes). Bumping the key flushes
+//      the v5 cache from any returning users so they pull the new defaults.
+var LS_KEY = 'pw_collisions_v6';
 var COLLISIONS = [];
 var LS_OK = true;  // becomes false if localStorage is blocked (e.g. preview sandbox)
 function loadCollisions(){
