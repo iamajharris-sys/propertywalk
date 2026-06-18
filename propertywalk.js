@@ -1285,6 +1285,19 @@ function updateItems(){
       updateItemCounter();
       // Pickup message — small pill just above the inventory bar
       showPickupMsg(ITEM_PICKUP_MSG[it.id]);
+      // ── Package trigger: Grumpy snaps into chase mode when the package
+      //    is collected. Package is the most likely first grab, so this
+      //    guarantees the chase starts even if he hasn't detected Sarah yet.
+      if(it.id === 'package'){
+        for(var zi=0; zi<ZOMBIES.length; zi++){
+          if(ZOMBIES[zi].char === 'grumpy'){
+            ZOMBIES[zi].state = 'chase';
+            ZOMBIES[zi]._detourUntil = 0;
+            ZOMBIES[zi]._stuckTrackStart = undefined;
+            break;
+          }
+        }
+      }
       // Check if all 5 collected -> victory
       if(INV.key && INV.phone && INV.coffee && INV.cash && INV.package){
         setTimeout(triggerVictory, 250);
