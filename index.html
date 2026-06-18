@@ -40,19 +40,47 @@ body { font-family: 'Inter', sans-serif; background: #1a1a1a; color: #fff; min-h
 #joy-stick { position:absolute; top:50%; left:50%; width:52px; height:52px; border-radius:50%; background:rgba(41,171,226,0.6); border:1.5px solid rgba(41,171,226,0.95); transform:translate(-50%,-50%); }
 #joy-base.show { display:block; }
 
-/* Start menu overlay */
-#menu-screen { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(45,45,45,0.95); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; z-index:60; padding:24px; }
+/* Start menu overlay — full-bleed cover image with clickable START GAME hotspot */
+#menu-screen { position:absolute; top:0; left:0; right:0; bottom:0; background:#000; display:flex; align-items:center; justify-content:center; z-index:60; padding:0; overflow:hidden; }
 #menu-screen.hidden { display:none; }
+#menu-cover { display:block; max-width:100%; max-height:100%; width:auto; height:100%; object-fit:contain; user-select:none; -webkit-user-drag:none; pointer-events:none; }
+
+/* Invisible clickable hotspot over the START GAME button in the cover art.
+   Positioned in percentages relative to the menu-screen, so it scales with
+   the image. Cover art is 2048x2048 square; button sits roughly at:
+     center horizontally (50%), ~83% down vertically, ~32% wide, ~7% tall */
+#menu-hotspot {
+  position:absolute;
+  left:50%; top:83%;
+  transform:translate(-50%, -50%);
+  width:30%;
+  aspect-ratio:5/1;
+  max-width:340px;
+  background:transparent;
+  border:none;
+  padding:0;
+  cursor:pointer;
+  border-radius:12px;
+  z-index:62;
+  /* Subtle pulsing glow */
+  animation:hotspotPulse 1.8s ease-in-out infinite;
+}
+#menu-hotspot:hover { animation-duration:1s; }
+#menu-hotspot:focus { outline:none; }
+@keyframes hotspotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,166,35,0); }
+  50%      { box-shadow: 0 0 28px 6px rgba(245,166,35,0.55); }
+}
 
 /* Opening cutscene */
 #cutscene-screen { position:absolute; top:0; left:0; right:0; bottom:0; background:#000; display:none; align-items:center; justify-content:center; z-index:65; }
 #cutscene-screen.show { display:flex; }
 #cutscene-video { width:100%; height:100%; object-fit:contain; background:#000; }
 
-/* Mute button (top-left, menu only) */
-#mute-btn { position:absolute; top:28px; left:28px; display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.10); border:1.5px solid rgba(255,255,255,0.25); color:#fff; padding:8px 14px 8px 10px; border-radius:24px; cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; transition:background 0.15s, border-color 0.15s; }
-#mute-btn:hover { background:rgba(255,255,255,0.16); border-color:rgba(255,255,255,0.45); }
-#mute-btn .mute-hint { color:rgba(255,255,255,0.75); }
+/* Mute button (top-right of menu) */
+#mute-btn { position:absolute; top:14px; right:14px; display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.6); border:1.5px solid rgba(255,255,255,0.35); color:#fff; padding:8px 14px 8px 10px; border-radius:24px; cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; transition:background 0.15s, border-color 0.15s; z-index:63; }
+#mute-btn:hover { background:rgba(0,0,0,0.8); border-color:rgba(255,255,255,0.6); }
+#mute-btn .mute-hint { color:rgba(255,255,255,0.85); }
 #mute-btn.unmuted .mute-hint { display:none; }
 #mute-btn:not(.unmuted) { animation:mutePulse 1.8s ease-in-out infinite; }
 @keyframes mutePulse { 0%,100%{box-shadow:0 0 0 0 rgba(41,171,226,0);} 50%{box-shadow:0 0 0 8px rgba(41,171,226,0.18);} }
@@ -121,6 +149,8 @@ body { font-family: 'Inter', sans-serif; background: #1a1a1a; color: #fff; min-h
 
   <!-- START MENU OVERLAY -->
   <div id="menu-screen">
+    <img id="menu-cover" src="/gamecoverart.png" alt="Property Walk" />
+    <button id="menu-hotspot" onclick="startGame()" aria-label="Start Game"></button>
     <button id="mute-btn" onclick="toggleMute(event)" aria-label="Toggle music">
       <svg id="mute-icon-on" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -133,16 +163,6 @@ body { font-family: 'Inter', sans-serif; background: #1a1a1a; color: #fff; min-h
       </svg>
       <span class="mute-hint">tap to unmute</span>
     </button>
-    <div class="menu-inner">
-      <div class="menu-eyebrow">Clean Towers · Phoenix AZ</div>
-      <div class="menu-title">Property <span>Walk</span></div>
-      <div class="menu-sub">Avoid the nagging tenants, collect all 5 power items and keep the building running smooth.</div>
-      <button class="menu-play" onclick="startGame()">Start Game →</button>
-      <div class="menu-howto">
-        Move: arrow keys (desktop) · drag joystick (mobile)<br>
-        Collect: walk over items · win: collect all 5
-      </div>
-    </div>
   </div>
 
   <!-- OPENING CUTSCENE -->
