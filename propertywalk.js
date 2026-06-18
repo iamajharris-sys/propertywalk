@@ -1053,7 +1053,7 @@ function playFinalCutscene(){
     advanced = true;
     cs.classList.remove('show');
     if(video) video.style.display = 'none';
-    showLeadForm();
+    showQuoteCTA();
   }
   video.onended = advance;
   // Safety fallback: if the video doesn't start playing within 3 seconds
@@ -1070,11 +1070,11 @@ function playFinalCutscene(){
   setTimeout(function(){ if(!advanced) advance(); }, 30000);
 }
 
-function showLeadForm(){
-  var form = document.getElementById('lead-form-screen');
-  if(form){ form.classList.add('show'); }
+function showQuoteCTA(){
+  var cta = document.getElementById('quote-cta-screen');
+  if(cta){ cta.classList.add('show'); }
   else {
-    // Fallback to old victory screen if form not present
+    // Fallback to old victory screen if CTA not present
     var el = document.getElementById('victory-screen');
     if(el) el.classList.add('show');
   }
@@ -1366,6 +1366,8 @@ function returnToMenu(){
   document.getElementById('resign-screen').classList.remove('show');
   var v = document.getElementById('victory-screen');
   if(v) v.classList.remove('show');
+  var cta = document.getElementById('quote-cta-screen');
+  if(cta) cta.classList.remove('show');
   document.getElementById('menu-screen').classList.remove('hidden');
   fadeInMenuMusic();
 }
