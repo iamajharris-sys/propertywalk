@@ -57,6 +57,56 @@ body { font-family: 'Inter', sans-serif; background: #0a0a14; color: #fff; min-h
   overflow:hidden;
 }
 
+/* MOBILE ONLY (≤768px): frame sizes by width, not height — so on portrait
+   phones the artwork shrinks to fit the viewport width without leaving
+   empty space above/below it. Desktop sizing above is untouched. */
+@media (max-width: 768px) {
+  #menu-art-frame {
+    width:100%;
+    height:auto;
+    max-height:100%;
+  }
+}
+
+/* Landscape rotation prompt — appears only on mobile when in landscape */
+#rotate-prompt {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#0a0a14;
+  z-index:200;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  text-align:center;
+  padding:24px;
+  color:#fff;
+}
+#rotate-prompt .rotate-icon {
+  font-size:64px;
+  margin-bottom:18px;
+  animation:rotateIcon 2s ease-in-out infinite;
+}
+#rotate-prompt .rotate-title {
+  font-family:'Bebas Neue', sans-serif;
+  font-size:32px;
+  letter-spacing:0.04em;
+  margin-bottom:8px;
+}
+#rotate-prompt .rotate-sub {
+  font-family:'IBM Plex Mono', monospace;
+  font-size:12px;
+  color:rgba(255,255,255,0.6);
+}
+@keyframes rotateIcon {
+  0%, 100% { transform:rotate(0deg); }
+  50%      { transform:rotate(-90deg); }
+}
+/* Show the prompt only on mobile-sized landscape screens */
+@media (max-width: 900px) and (orientation: landscape) {
+  #rotate-prompt { display:flex; }
+}
+
 /* Invisible clickable hotspot over the START GAME button in the cover art.
    Positioned in percentages relative to the menu-screen, so it scales with
    the image. Cover art is 1254x1254 square; button measured at:
@@ -170,6 +220,11 @@ body { font-family: 'Inter', sans-serif; background: #0a0a14; color: #fff; min-h
 </style>
 </head>
 <body>
+<div id="rotate-prompt">
+  <div class="rotate-icon">📱</div>
+  <div class="rotate-title">PLEASE ROTATE YOUR DEVICE</div>
+  <div class="rotate-sub">property walk plays best in portrait mode</div>
+</div>
 <div class="ct-card">
 <div id="s-game">
   <div class="game-hud">
