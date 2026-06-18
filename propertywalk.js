@@ -900,7 +900,7 @@ var ZOMBIE_CHARACTERS = {
     },
   },
   karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen',      enabled:false, mirrorDir:'none',  chaseSpeed:0.5 },
-  complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true,  mirrorDir:'left',  chaseSpeed:0.5, spawn:{x:1474, y:779} },
+  complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true,  mirrorDir:'left',  chaseSpeed:0.5, spawn:{x:1279, y:1365} },
   talkative:  { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c93206b8fa6046c5ee76e_Talkative%20guy.png',  name:'Talkative',  enabled:true,  mirrorDir:'left',  chaseSpeed:0.6, rows:{down:0, right:1, left:2, up:3}, spawn:{x:1255, y:1080} },
 };
 // 4×4 sprite sheet layout — each direction is a row, each row has 4 walk frames.
@@ -928,7 +928,7 @@ Object.keys(ZOMBIE_CHARACTERS).forEach(function(k){
 // Detection is 360° (full circle) within ZOMBIE_DETECT radius — she "senses"
 // Sarah regardless of which way she's facing.
 var ZOMBIE_DETECT = 320;       // world-px detection radius
-var ZOMBIE_ALERT_MS = 2000;    // ms pause after spotting Sarah, before chase
+var ZOMBIE_ALERT_MS = 1000;    // ms pause after spotting Sarah, before chase
 // Distance Sarah must come within during alert state to trigger chase.
 // If she stays outside this and outside detection escalates, after the
 // give-up window the tenant returns to idle.
@@ -957,7 +957,7 @@ function randomWalkablePoint(){
 var ITEM_SPAWNS = {
   key:     {x:1258, y:1549},
   phone:   {x:775,  y:1603},
-  coffee:  {x:1383, y:652},
+  coffee:  {x:1747, y:1123},
   cash:    {x:1000, y:774},
   package: {x:472,  y:594},
 };
@@ -1050,7 +1050,8 @@ function updateInventoryHUD(){
 // Total items in the current build.
 var TOTAL_ITEMS = 5;
 
-// Pickup pill — pokemon-style char-by-char typing reveal, then holds, then fades.
+// Pickup pill — shows "..." briefly first, then pokemon-style char-by-char
+// reveal of the message, then holds, then fades.
 var _pickupTimer = null;
 var _pickupTypeTimer = null;
 function showPickupMsg(text){
@@ -1061,21 +1062,32 @@ function showPickupMsg(text){
   if(_pickupTimer)     clearTimeout(_pickupTimer);
   el.textContent = '';
   el.classList.remove('show');
-  void el.offsetWidth; // reflow to restart fade-in animation
+  void el.offsetWidth;
   el.classList.add('show');
-  // Type out characters one at a time. ~40ms/char feels game-boy paced.
-  var i = 0;
-  _pickupTypeTimer = setInterval(function(){
-    if(i >= text.length){
-      clearInterval(_pickupTypeTimer);
-      _pickupTypeTimer = null;
-      // Hold the finished message, then fade out
-      _pickupTimer = setTimeout(function(){ el.classList.remove('show'); }, 1800);
-      return;
-    }
-    el.textContent += text.charAt(i);
-    i++;
-  }, 40);
+  // Phase 1: show "..." typing for half a second
+  var dots = ['.', '..', '...'];
+  var di = 0;
+  el.textContent = dots[0];
+  var dotsTimer = setInterval(function(){
+    di = (di + 1) % dots.length;
+    el.textContent = dots[di];
+  }, 160);
+  // Phase 2: after 500ms, clear and type the real message
+  setTimeout(function(){
+    clearInterval(dotsTimer);
+    el.textContent = '';
+    var i = 0;
+    _pickupTypeTimer = setInterval(function(){
+      if(i >= text.length){
+        clearInterval(_pickupTypeTimer);
+        _pickupTypeTimer = null;
+        _pickupTimer = setTimeout(function(){ el.classList.remove('show'); }, 1800);
+        return;
+      }
+      el.textContent += text.charAt(i);
+      i++;
+    }, 40);
+  }, 500);
 }
 
 function showObjectiveBanner(text){
