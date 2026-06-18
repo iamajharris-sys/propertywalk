@@ -209,10 +209,10 @@ body.cta-active { background: #000; }
   transform:translateY(20px);
 }
 #quote-cta-screen.show .cta-eyebrow  { animation:ctaRise 1.2s ease-out 0.6s forwards; }
-#quote-cta-screen.show .cta-headline { animation:ctaRise 1.4s ease-out 1.4s forwards; }
-#quote-cta-screen.show .cta-sub      { animation:ctaRise 1.2s ease-out 3.6s forwards; }
-#quote-cta-screen.show .cta-btn      { animation:ctaRise 1.8s ease-out 6.0s forwards; }
-#quote-cta-screen.show .cta-logo     { animation:ctaRise 1.8s ease-out 6.0s forwards; }
+#quote-cta-screen.show .cta-headline { animation:ctaRise 1.4s ease-out 1.9s forwards; }
+#quote-cta-screen.show .cta-sub      { animation:ctaRise 1.2s ease-out 4.1s forwards; }
+#quote-cta-screen.show .cta-btn      { animation:ctaRise 1.8s ease-out 6.5s forwards; }
+#quote-cta-screen.show .cta-logo     { animation:ctaRise 1.8s ease-out 6.5s forwards; }
 @keyframes ctaRise {
   to { opacity:1; transform:translateY(0); }
 }
@@ -233,12 +233,12 @@ body.cta-active { background: #000; }
 }
 .cta-btn {
   display:inline-block;
-  background:#29ABE2; color:#0a0a14;
+  background:#29ABE2; color:#fff;
   text-decoration:none;
   padding:20px 52px;
   font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:700;
   letter-spacing:0.2em; text-transform:uppercase;
-  border:none; border-radius:8px;
+  border:2px solid #7FD4F2; border-radius:8px;
   cursor:pointer;
   box-shadow:0 12px 36px rgba(41,171,226,0.5);
   transition:transform 0.2s, box-shadow 0.2s;
@@ -249,7 +249,7 @@ body.cta-active { background: #000; }
 }
 /* Button glow only kicks in after fade-in completes */
 #quote-cta-screen.show .cta-btn {
-  animation:ctaRise 1.8s ease-out 6.0s forwards, ctaPulse 2.4s ease-in-out 8.0s infinite;
+  animation:ctaRise 1.8s ease-out 6.5s forwards, ctaPulse 2.4s ease-in-out 8.5s infinite;
 }
 @keyframes ctaPulse {
   0%,100% { box-shadow:0 12px 36px rgba(41,171,226,0.5); }
@@ -340,7 +340,7 @@ body.cta-active { background: #000; }
     <div class="quote-cta-inner">
       <div class="cta-eyebrow">Clean Towers</div>
       <div class="cta-headline">when monkey business is sometimes okay</div>
-      <div class="cta-sub">Protect your building from nagging tenants.<br>let our gorilla handle your windows.</div>
+      <div class="cta-sub">protect your building from nagging tenants.</div>
       <a class="cta-btn" href="https://www.cleantowers.com/quote-my-building" target="_self" rel="noopener">Get a Quote →</a>
       <img class="cta-logo" src="/Clean.Towers_Main-01.png" alt="Clean Towers" />
     </div>
