@@ -958,7 +958,7 @@ var ITEM_SPAWNS = {
   key:     {x:1258, y:1549},
   phone:   {x:775,  y:1603},
   coffee:  {x:1747, y:1123},
-  cash:    {x:1000, y:774},
+  cash:    {x:1643, y:412},
   package: {x:472,  y:594},
 };
 
@@ -998,6 +998,7 @@ function spawnZombies(){
       fr: 0,
       frT: 0,
       alertStart: 0,
+      relentless: false,     // becomes true via triggers (e.g. coffee pickup)
     });
   });
 }
@@ -1310,6 +1311,20 @@ function updateItems(){
           }
         }
       }
+      // ── Coffee trigger: Complainer locks into permanent chase. Once she
+      //    starts chasing, the hysteresis check that returns her to idle is
+      //    disabled — she keeps coming no matter how far Sarah runs.
+      if(it.id === 'coffee'){
+        for(var zi=0; zi<ZOMBIES.length; zi++){
+          if(ZOMBIES[zi].char === 'complainer'){
+            ZOMBIES[zi].state = 'chase';
+            ZOMBIES[zi].relentless = true;
+            ZOMBIES[zi]._detourUntil = 0;
+            ZOMBIES[zi]._stuckTrackStart = undefined;
+            break;
+          }
+        }
+      }
       // Check if all 5 collected -> victory
       if(INV.key && INV.phone && INV.coffee && INV.cash && INV.package){
         setTimeout(triggerVictory, 250);
@@ -1415,8 +1430,9 @@ function updateZombies(){
 
     // ── State transitions (360° detection — no vision cone) ──
     if(z.state === 'chase'){
-      // Lose interest if Sarah escapes far beyond detection (hysteresis)
-      if(dist > ZOMBIE_DETECT * 1.5){
+      // Lose interest if Sarah escapes far beyond detection (hysteresis).
+      // Relentless tenants ignore this — they keep coming once triggered.
+      if(!z.relentless && dist > ZOMBIE_DETECT * 1.5){
         z.state = 'idle';
         // Clear stuck-detection / detour state for next chase
         z._detourUntil = 0;
