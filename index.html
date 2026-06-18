@@ -18,7 +18,7 @@ body { font-family: 'Inter', sans-serif; background: #1a1a1a; color: #fff; min-h
 .hud-s { display: flex; flex-direction: column; align-items: center; gap: 1px; }
 .hud-l { font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); text-transform: uppercase; }
 .hud-v { font-family: 'Bebas Neue', sans-serif; font-size: 16px; line-height: 1; color:#F5A623; }
-#game-canvas { display: block; width: 100%; height: 560px; background: #cfd4da; }
+#game-canvas { display: block; width: 100%; height: 660px; background: #cfd4da; }
 
 .dbg-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:8px 12px; background:#0d0d0d; border-top:1px solid rgba(255,255,255,0.06); font-family:'IBM Plex Mono',monospace; font-size:10px; }
 .dbg-coord { color:#29ABE2; } .dbg-coord b { color:#fff; }
@@ -41,9 +41,9 @@ body { font-family: 'Inter', sans-serif; background: #1a1a1a; color: #fff; min-h
 #joy-base.show { display:block; }
 
 /* Start menu overlay — full-bleed cover image with clickable START GAME hotspot */
-#menu-screen { position:absolute; top:0; left:0; right:0; bottom:0; background:#000; display:flex; align-items:center; justify-content:center; z-index:60; padding:0; overflow:hidden; }
+#menu-screen { position:absolute; top:0; left:0; right:0; bottom:0; background:#0a0a14; display:flex; align-items:center; justify-content:center; z-index:60; padding:0; overflow:hidden; }
 #menu-screen.hidden { display:none; }
-#menu-cover { display:block; width:100%; height:100%; object-fit:cover; user-select:none; -webkit-user-drag:none; pointer-events:none; }
+#menu-cover { display:block; width:100%; height:100%; object-fit:contain; user-select:none; -webkit-user-drag:none; pointer-events:none; }
 
 /* Invisible clickable hotspot over the START GAME button in the cover art.
    Positioned in percentages relative to the menu-screen, so it scales with
