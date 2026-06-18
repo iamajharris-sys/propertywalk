@@ -232,51 +232,28 @@ body.cta-active { background: #000; }
   line-height:1.65; font-weight:400;
 }
 .cta-btn {
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  background:linear-gradient(180deg, #5EC1EE 0%, #29ABE2 50%, #1E7FBF 100%);
-  color:#fff;
+  display:inline-block;
+  background:#29ABE2; color:#fff;
   text-decoration:none;
   padding:14px 36px;
   font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700;
   letter-spacing:0.2em; text-transform:uppercase;
-  border:none; border-radius:999px;
+  border:2px solid #7FD4F2; border-radius:8px;
   cursor:pointer;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.4),
-    inset 0 -2px 4px rgba(0,0,0,0.18),
-    0 8px 22px rgba(41,171,226,0.4),
-    0 2px 4px rgba(0,0,0,0.25);
+  box-shadow:0 8px 22px rgba(41,171,226,0.4);
   transition:transform 0.2s, box-shadow 0.2s;
 }
 .cta-btn:hover {
   transform:translateY(-2px);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.5),
-    inset 0 -2px 4px rgba(0,0,0,0.2),
-    0 12px 28px rgba(41,171,226,0.55),
-    0 2px 4px rgba(0,0,0,0.3);
+  box-shadow:0 12px 28px rgba(41,171,226,0.55);
 }
 /* Button glow only kicks in after fade-in completes */
 #quote-cta-screen.show .cta-btn {
   animation:ctaRise 1.8s ease-out 7.5s forwards, ctaPulse 2.4s ease-in-out 9.5s infinite;
 }
 @keyframes ctaPulse {
-  0%,100% {
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.4),
-      inset 0 -2px 4px rgba(0,0,0,0.18),
-      0 8px 22px rgba(41,171,226,0.4),
-      0 2px 4px rgba(0,0,0,0.25);
-  }
-  50% {
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.5),
-      inset 0 -2px 4px rgba(0,0,0,0.18),
-      0 12px 32px rgba(41,171,226,0.75),
-      0 2px 4px rgba(0,0,0,0.25);
-  }
+  0%,100% { box-shadow:0 8px 22px rgba(41,171,226,0.4); }
+  50%     { box-shadow:0 12px 32px rgba(41,171,226,0.75); }
 }
 .cta-logo {
   display:block;
