@@ -165,8 +165,10 @@ body.edit-mode .game-hud { display: flex; }
 #item-counter { position:absolute; left:14px; top:610px; z-index:25; display:none; padding:8px 14px; background:rgba(26,43,74,0.85); border:1.5px solid rgba(41,171,226,0.35); border-radius:8px; font-family:'IBM Plex Mono',monospace; pointer-events:none; }
 
 /* Dev edit toggle — discreet pencil at top-left of game canvas, only AJ uses it */
-#dev-edit-toggle { position:absolute; top:14px; left:14px; z-index:24; width:28px; height:28px; border-radius:6px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.4); font-size:13px; cursor:pointer; transition:opacity 0.2s, background 0.2s, color 0.2s; opacity:0.35; padding:0; display:flex; align-items:center; justify-content:center; }
+#dev-edit-toggle { position:absolute; top:14px; left:14px; z-index:50; width:28px; height:28px; border-radius:6px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.4); font-size:13px; cursor:pointer; transition:opacity 0.2s, background 0.2s, color 0.2s, top 0.2s; opacity:0.35; padding:0; display:flex; align-items:center; justify-content:center; }
 #dev-edit-toggle:hover { opacity:1; background:rgba(0,0,0,0.7); color:#fff; }
+/* When edit mode is on, shift the pencil down so it sits on the canvas (not behind the hud bar that becomes visible) */
+body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); color:#fff; opacity:1; border-color:rgba(245,166,35,1); }
 #item-counter.show { display:flex; align-items:center; gap:10px; }
 #item-counter .ic-label { font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.55); }
 #item-counter .ic-val { font-size:18px; color:#F5A623; font-weight:700; }
@@ -402,8 +404,8 @@ body.edit-mode .game-hud { display: flex; }
   </div>
   <div class="dbg-bar" id="dbg-bar" style="display:none;">
     <span class="dbg-coord">world x:<b id="cx">0</b> y:<b id="cy">0</b></span>
-    <label>zoom <input type="range" id="zoom" min="0.3" max="4" step="0.1" value="1.1"></label>
-    <label>speed <input type="range" id="speed" min="2" max="12" step="0.5" value="5"></label>
+    <label>zoom <input type="range" id="zoom" min="0.3" max="4" step="0.1" value="1.1"> <b id="zoom-val" style="color:#7CFC9A;min-width:32px;text-align:right;">1.1</b></label>
+    <label>speed <input type="range" id="speed" min="2" max="12" step="0.5" value="5"> <b id="speed-val" style="color:#7CFC9A;min-width:32px;text-align:right;">5</b></label>
     <button class="dbg-btn" id="btn-coll" onclick="toggleColl()">Collision: ON</button>
     <span class="dbg-coord" id="mapstatus" style="color:#F5A623;">loading map…</span>
     <div style="flex-basis:100%; height:0;"></div>
@@ -436,6 +438,15 @@ body.edit-mode .game-hud { display: flex; }
     document.getElementById('dbg-bar').style.display = '';
     document.body.classList.add('edit-mode');
   }
+  // Live-update value labels under zoom and speed sliders
+  (function(){
+    var zoom = document.getElementById('zoom');
+    var speed = document.getElementById('speed');
+    var zoomVal = document.getElementById('zoom-val');
+    var speedVal = document.getElementById('speed-val');
+    if(zoom && zoomVal){ zoom.addEventListener('input', function(){ zoomVal.textContent = zoom.value; }); }
+    if(speed && speedVal){ speed.addEventListener('input', function(){ speedVal.textContent = speed.value; }); }
+  })();
 </script>
 <script src="/propertywalk.js"></script>
 </body>
