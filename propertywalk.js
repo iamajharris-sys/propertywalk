@@ -214,7 +214,7 @@ function loadMap(){
 
 // ── CANVAS / CAMERA ─────────────────────────────────────────────────
 var canvas, ctx, VW, VH;        // viewport (canvas) size in CSS px
-var ZOOM = 0.7;                 // how zoomed-in the camera is
+var ZOOM = 1.0;                 // how zoomed-in the camera is
 var cam = { x:0, y:0 };         // camera top-left in WORLD coords
 
 var P = { x:1024, y:1024, w:72, h:152, facing:'down', moving:false, fr:0, frT:0, spd:5, bob:0, bobT:0, celebrating:false, celebrateStart:0 };
@@ -1005,7 +1005,7 @@ function resetInventory(){
 function updateInventoryHUD(){
   var ids = ['key','phone','coffee','cash','package'];
   var collected = 0;
-  ids.forEach(function(id){
+  ids.forEach(function(id, i){
     var el = document.getElementById('inv-'+id);
     if(!el) return;
     if(INV[id]){
@@ -1015,19 +1015,37 @@ function updateInventoryHUD(){
       el.classList.remove('filled');
     }
   });
-  // Drive the bar fill width — each item = 20% of the bar
-  var fill = document.getElementById('inv-bar-fill');
-  if(fill){
-    var pct = (collected / ids.length) * 100;
-    fill.style.width = pct + '%';
-    // Glow once we hit 60%+ (3+ items) — bar lights up as urgency builds
-    fill.classList.toggle('glow', collected >= 3);
+  // Bridges fill in left-to-right collection order, regardless of which
+  // specific item was collected — chain visually grows by count.
+  for(var i=1; i<=4; i++){
+    var bridge = document.getElementById('bridge-'+i);
+    if(!bridge) continue;
+    if(collected >= i+1){ bridge.classList.add('filled'); }
+    else                { bridge.classList.remove('filled'); }
   }
+  // Drive the chain-wide glow intensity (1..5)
+  var bar = document.getElementById('inv-bar');
+  if(bar) bar.setAttribute('data-filled', String(collected));
 }
 
 // ── OBJECTIVE BANNER + ITEM COUNTER ─────────────────────────────
 // Total items in the current build.
 var TOTAL_ITEMS = 5;
+
+// Pickup pill — subtle one-line message that appears just above the inventory
+// bar in the bottom-right of the canvas. Fades in/out without using the big
+// objective banner.
+var _pickupTimer = null;
+function showPickupMsg(text){
+  var el = document.getElementById('pickup-msg');
+  if(!el) return;
+  el.textContent = text;
+  el.classList.remove('show');
+  void el.offsetWidth; // reflow to restart CSS animation
+  el.classList.add('show');
+  if(_pickupTimer) clearTimeout(_pickupTimer);
+  _pickupTimer = setTimeout(function(){ el.classList.remove('show'); }, 2200);
+}
 
 function showObjectiveBanner(text){
   var el = document.getElementById('obj-banner');
@@ -1233,8 +1251,8 @@ function updateItems(){
       spawnCelebrationSparkles(P.x, P.y);
       updateInventoryHUD();
       updateItemCounter();
-      // Pickup message — quick affirmation per item collected
-      showObjectiveBanner(ITEM_PICKUP_MSG[it.id]);
+      // Pickup message — small pill just above the inventory bar
+      showPickupMsg(ITEM_PICKUP_MSG[it.id]);
       // Check if all 5 collected -> victory
       if(INV.key && INV.phone && INV.coffee && INV.cash && INV.package){
         setTimeout(triggerVictory, 250);
