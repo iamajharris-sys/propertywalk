@@ -44,6 +44,18 @@ body { font-family: 'Inter', sans-serif; background: #0a0a14; color: #fff; min-h
 #menu-screen { position:absolute; top:0; left:0; right:0; bottom:0; background:#0a0a14; display:flex; align-items:center; justify-content:center; z-index:60; padding:0; overflow:hidden; }
 #menu-screen.hidden { display:none; }
 #menu-cover { display:block; width:100%; height:100%; object-fit:contain; user-select:none; -webkit-user-drag:none; pointer-events:none; }
+/* Inner wrapper that sizes to the artwork exactly so we can border + position
+   the mute button to the artwork instead of the container. */
+#menu-art-frame {
+  position:relative;
+  height:100%;
+  aspect-ratio:1/1;
+  max-width:100%;
+  border:6px solid #ffffff;
+  border-radius:4px;
+  box-shadow:0 12px 40px rgba(0,0,0,0.6);
+  overflow:hidden;
+}
 
 /* Invisible clickable hotspot over the START GAME button in the cover art.
    Positioned in percentages relative to the menu-screen, so it scales with
@@ -170,21 +182,23 @@ body { font-family: 'Inter', sans-serif; background: #0a0a14; color: #fff; min-h
 
   <!-- START MENU OVERLAY -->
   <div id="menu-screen">
-    <img id="menu-cover" src="/gamecoverart.jpeg" alt="Property Walk" />
-    <div id="tagline-glow"></div>
-    <button id="menu-hotspot" onclick="startGame()" aria-label="Start Game"></button>
-    <button id="mute-btn" onclick="toggleMute(event)" aria-label="Toggle music">
-      <svg id="mute-icon-on" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
-      </svg>
-      <svg id="mute-icon-off" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-        <line x1="23" y1="9" x2="17" y2="15"/>
-        <line x1="17" y1="9" x2="23" y2="15"/>
-      </svg>
-      <span class="mute-hint">tap to unmute</span>
-    </button>
+    <div id="menu-art-frame">
+      <img id="menu-cover" src="/gamecoverart.jpeg" alt="Property Walk" />
+      <div id="tagline-glow"></div>
+      <button id="menu-hotspot" onclick="startGame()" aria-label="Start Game"></button>
+      <button id="mute-btn" onclick="toggleMute(event)" aria-label="Toggle music">
+        <svg id="mute-icon-on" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+        <svg id="mute-icon-off" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <line x1="23" y1="9" x2="17" y2="15"/>
+          <line x1="17" y1="9" x2="23" y2="15"/>
+        </svg>
+        <span class="mute-hint">tap to unmute</span>
+      </button>
+    </div>
   </div>
 
   <!-- OPENING CUTSCENE -->
