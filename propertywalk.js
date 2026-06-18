@@ -890,7 +890,7 @@ var ZOMBIE_CHARACTERS = {
   // spawn: fixed world-pixel start position (marketing tool — no randomness)
   grumpy: {
     url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c90f365d062b2a6e7ee6d_Grumpy_guywalking.png',
-    name:'Grumpy', enabled:true, chaseSpeed:0.2,
+    name:'Grumpy', enabled:true, chaseSpeed:0.4,
     spawn:{x:505, y:912},
     frameMap:{
       down:  [[0,0],[0,1],[0,2],[0,3]],
@@ -900,8 +900,8 @@ var ZOMBIE_CHARACTERS = {
     },
   },
   karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen',      enabled:false, mirrorDir:'none',  chaseSpeed:0.5 },
-  complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true,  mirrorDir:'left',  chaseSpeed:0.25, spawn:{x:1062, y:788} },
-  talkative:  { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c93206b8fa6046c5ee76e_Talkative%20guy.png',  name:'Talkative',  enabled:true,  mirrorDir:'left',  chaseSpeed:0.3, rows:{down:0, right:1, left:2, up:3}, spawn:{x:1255, y:1080} },
+  complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true,  mirrorDir:'left',  chaseSpeed:0.5, spawn:{x:1474, y:779} },
+  talkative:  { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c93206b8fa6046c5ee76e_Talkative%20guy.png',  name:'Talkative',  enabled:true,  mirrorDir:'left',  chaseSpeed:0.6, rows:{down:0, right:1, left:2, up:3}, spawn:{x:1255, y:1080} },
 };
 // 4×4 sprite sheet layout — each direction is a row, each row has 4 walk frames.
 //   ROW 0: facing DOWN   (4-frame walk cycle)
@@ -928,9 +928,14 @@ Object.keys(ZOMBIE_CHARACTERS).forEach(function(k){
 // Detection is 360° (full circle) within ZOMBIE_DETECT radius — she "senses"
 // Sarah regardless of which way she's facing.
 var ZOMBIE_DETECT = 320;       // world-px detection radius
+var ZOMBIE_ALERT_MS = 2000;    // ms pause after spotting Sarah, before chase
+// Distance Sarah must come within during alert state to trigger chase.
+// If she stays outside this and outside detection escalates, after the
+// give-up window the tenant returns to idle.
+var ZOMBIE_CHASE_TRIGGER = 220;
+var ZOMBIE_GIVEUP_MS = 5000;   // ms before alert tenant gives up and returns idle
 var ZOMBIE_CHASE_SPD = 0.5;    // 50% of player speed when chasing
-var ZOMBIE_ALERT_MS = 2000;    // ms between detection and chase start
-var ZOMBIE_TOUCH_RADIUS = 70;  // touch distance for game-over
+var ZOMBIE_TOUCH_RADIUS = 55;  // touch distance for game-over
 var ZOMBIES = [];
 
 function rand(a,b){ return a + Math.random()*(b-a); }
@@ -1386,13 +1391,24 @@ function updateZombies(){
     // ── State transitions (360° detection — no vision cone) ──
     if(z.state === 'chase'){
       // Lose interest if Sarah escapes far beyond detection (hysteresis)
-      if(dist > ZOMBIE_DETECT * 1.5) z.state = 'idle';
-    } else if(z.state === 'alert'){
-      // Holding alert pose, facing Sarah. Bail back to idle if Sarah escapes.
       if(dist > ZOMBIE_DETECT * 1.5){
         z.state = 'idle';
-      } else if(performance.now() - z.alertStart >= ZOMBIE_ALERT_MS){
+        // Clear stuck-detection / detour state for next chase
+        z._detourUntil = 0;
+        z._stuckTrackStart = undefined;
+      }
+    } else if(z.state === 'alert'){
+      // Holding alert pose, facing Sarah. Three exit conditions:
+      //  (1) Sarah escaped detection radius → return to idle immediately
+      //  (2) Sarah came within chase trigger distance → start chasing
+      //  (3) Stayed in alert too long without (2) → give up, return to idle
+      if(dist > ZOMBIE_DETECT * 1.5){
+        z.state = 'idle';
+      } else if(dist <= ZOMBIE_CHASE_TRIGGER && performance.now() - z.alertStart >= ZOMBIE_ALERT_MS){
         z.state = 'chase';
+      } else if(performance.now() - z.alertStart >= ZOMBIE_GIVEUP_MS){
+        z.state = 'idle';
+        z.facing = 'down';   // turn back to default facing
       }
     } else {
       // Idle: detect Sarah anywhere within radius → enter alert (turn + pause)
@@ -1408,13 +1424,67 @@ function updateZombies(){
       var charDef = ZOMBIE_CHARACTERS[z.char];
       var chaseMul = (charDef && charDef.chaseSpeed !== undefined) ? charDef.chaseSpeed : ZOMBIE_CHASE_SPD;
       var spd = P.spd * chaseMul;
+      var now = performance.now();
+
+      // ── Stuck detection ──
+      // Track position over short windows; if we've barely moved while
+      // chasing, we're wedged against a wall. Pick a perpendicular detour
+      // direction and commit to it for ~1.5s before resuming direct chase.
+      if(z._stuckTrackStart === undefined){
+        z._stuckTrackStart = now;
+        z._stuckTrackX = z.x;
+        z._stuckTrackY = z.y;
+      }
+      if(z._detourUntil && now < z._detourUntil){
+        // Stay on detour — overrides direct chase axis
+      } else if(now - z._stuckTrackStart > 600){
+        var moved = Math.hypot(z.x - z._stuckTrackX, z.y - z._stuckTrackY);
+        if(moved < 4){
+          // Wedged. Pick a perpendicular axis to slide along. Choose the
+          // perpendicular direction whose component toward Sarah is larger,
+          // so the detour at least tracks generally toward her.
+          var pxA = -dy, pyA = dx;       // 90° rotation of (dx,dy)
+          var pxB =  dy, pyB = -dx;
+          var aLen = Math.hypot(pxA, pyA) || 1;
+          var bLen = Math.hypot(pxB, pyB) || 1;
+          // Prefer the perpendicular that points more toward Sarah.
+          // Tie-break: alternate sides per stuck event so we don't loop.
+          var dot = (z._lastDetourSide === 'A') ? -1 : 1; // flip last time
+          var sideAScore = dot * ((pxA*dx + pyA*dy));
+          var sideBScore = -dot * ((pxB*dx + pyB*dy));
+          if(sideAScore >= sideBScore){
+            z._detourDx = pxA / aLen;
+            z._detourDy = pyA / aLen;
+            z._lastDetourSide = 'A';
+          } else {
+            z._detourDx = pxB / bLen;
+            z._detourDy = pyB / bLen;
+            z._lastDetourSide = 'B';
+          }
+          z._detourUntil = now + 1500;
+        }
+        // Reset tracking window
+        z._stuckTrackStart = now;
+        z._stuckTrackX = z.x;
+        z._stuckTrackY = z.y;
+      }
+
       var moveX = 0, moveY = 0;
-      if(dist > 0){
+      if(z._detourUntil && now < z._detourUntil){
+        // Moving along the detour direction (e.g. wall-following)
+        moveX = z._detourDx * spd;
+        moveY = z._detourDy * spd;
+      } else if(dist > 0){
+        // Normal direct chase toward Sarah
         moveX = (dx/dist) * spd;
         moveY = (dy/dist) * spd;
       }
-      // Update facing to point toward Sarah
-      z.facing = dirToFacing(Math.atan2(dy, dx));
+      // Update facing — use the actual movement direction, not toward Sarah,
+      // so the sprite reads correctly while detouring along a wall.
+      var moveLen = Math.hypot(moveX, moveY);
+      if(moveLen > 0.01){
+        z.facing = dirToFacing(Math.atan2(moveY, moveX));
+      }
       // Animate walk cycle while chasing — alternating mouth open/closed
       z.frT++;
       if(z.frT > ZOMBIE_FRAME_TICK){
@@ -1461,7 +1531,7 @@ function drawZombies(){
     var z = ZOMBIES[i];
     var x = w2sX(z.x), y = w2sY(z.y);
     // Zombie sprite size in world units (scaled to match Sarah)
-    var spriteH = 190, spriteW = spriteH*0.78;
+    var spriteH = 152, spriteW = spriteH*0.78;
     var sw = spriteW*ZOOM, sh = spriteH*ZOOM;
 
     // shadow on the ground (anchored at z.y, the zombie's feet)
