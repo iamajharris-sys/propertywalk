@@ -410,14 +410,14 @@ body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); co
     <span class="dbg-coord" id="mapstatus" style="color:#F5A623;">loading map…</span>
     <div style="flex-basis:100%; height:0;"></div>
     <button class="dbg-btn" id="btn-edit" onclick="toggleEdit()">✎ Edit: OFF</button>
+    <button class="dbg-btn" style="background:#29ABE2;color:#fff;border-color:#29ABE2;font-weight:700;" onclick="addBox()">+ Add Box</button>
+    <button class="dbg-btn" style="background:#F5A623;color:#1A2B4A;border-color:#F5A623;font-weight:700;" onclick="exportBoxes()">⬇ Copy / Export</button>
   </div>
-  <div class="dbg-edit-bar" id="edit-bar" style="display:none;">
+  <div class="dbg-edit-bar" id="edit-bar">
     <span class="edit-hint">drag to move · drag corners to resize · click empty to deselect</span>
     <span id="save-status" style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#7CFC9A;letter-spacing:0.05em;opacity:0.5;transition:opacity 0.3s;">—</span>
-    <button class="dbg-btn" onclick="addBox()">+ Add Box</button>
     <button class="dbg-btn" onclick="deleteSelected()">🗑 Delete</button>
     <button class="dbg-btn" onclick="resetBoxes()">↺ Reset</button>
-    <button class="dbg-btn" onclick="exportBoxes()">⬇ Export</button>
   </div>
   <div id="export-pane"><div id="export-head"><span>Collision data — paste back to Claude</span><button onclick="closeExport()">✕</button></div><textarea id="export-text" readonly></textarea><button class="dbg-btn" style="width:100%;margin-top:6px;" onclick="copyExport()">Copy</button></div>
 
