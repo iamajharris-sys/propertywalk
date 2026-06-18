@@ -940,10 +940,11 @@ function startGame(){
   // "Start Game" button click → hide menu, kill music, play cutscene.
   // When cutscene ends, beginGameplay() runs.
   STATE = 'cutscene';
-  // ── iOS audio unlock: this click is a user gesture, so we touch each
-  //    Audio element here to register it as user-gesture-approved. iOS
-  //    requires play() to be called inside the gesture handler — even if
-  //    we pause immediately. Once unlocked, subsequent play() calls work.
+  // ── iOS audio + video unlock: this click is a user gesture, so we touch
+  //    each Audio and Video element here to register them as user-gesture-
+  //    approved. iOS requires play() to be called inside the gesture handler
+  //    — even if we pause immediately. Once unlocked, subsequent play()
+  //    calls work, including for the final cutscene video shown later.
   try {
     [menuMusic, gameplayMusic, pickupSfx].forEach(function(audio){
       if(audio){
@@ -964,6 +965,21 @@ function startGame(){
         }
       }
     });
+    // Also unlock the final cutscene video — same gesture
+    var finalVid = document.getElementById('final-cutscene-video');
+    if(finalVid){
+      finalVid.muted = true;
+      var fp = finalVid.play();
+      if(fp && fp.then){
+        fp.then(function(){
+          finalVid.pause();
+          finalVid.currentTime = 0;
+          finalVid.muted = false;
+        }).catch(function(){
+          finalVid.muted = false;
+        });
+      }
+    }
   } catch(err) { /* ignore unlock errors — fall through to cutscene */ }
   document.getElementById('menu-screen').classList.add('hidden');
   // Hard-stop menu music (not fade — cutscene has its own audio)
@@ -1030,14 +1046,28 @@ function playFinalCutscene(){
   cs.classList.add('show');
   video.currentTime = 0;
   video.muted = IS_MUTED;
+  // Track whether we've already advanced past the cutscene to prevent double-fire
+  var advanced = false;
+  function advance(){
+    if(advanced) return;
+    advanced = true;
+    cs.classList.remove('show');
+    if(video) video.style.display = 'none';
+    showLeadForm();
+  }
+  video.onended = advance;
+  // Safety fallback: if the video doesn't start playing within 3 seconds
+  // (mobile autoplay block, network failure, etc), advance anyway
   var playPromise = video.play();
   if(playPromise && playPromise.catch){
-    playPromise.catch(function(){ /* autoplay block — handled by ended fallback */ });
+    playPromise.catch(function(){
+      // Play was blocked — advance after a short visual beat
+      setTimeout(advance, 1500);
+    });
   }
-  video.onended = function(){
-    cs.classList.remove('show');
-    showLeadForm();
-  };
+  // Hard timeout: even if play() succeeded, force advance after 30s
+  // (covers cases where 'ended' never fires due to encoding issues)
+  setTimeout(function(){ if(!advanced) advance(); }, 30000);
 }
 
 function showLeadForm(){
