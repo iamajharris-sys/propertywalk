@@ -1011,7 +1011,7 @@ function beginGameplay(){
   spawnZombies();
   startGameplayMusic();
   showItemCounter();
-  showObjectiveBanner('This is your property! Collect all 5 power items and head to the roof before the nagging tenants corner you...');
+  showObjectiveBanner('This is your property! Collect all 5 power items and head to the roof before the tenants corner you...');
 }
 
 function triggerVictory(){
