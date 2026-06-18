@@ -15,7 +15,8 @@ body.cta-active { background: #000; }
   background: transparent; border: none; box-shadow: none; display: block;
 }
 #s-game { padding: 0; width: 100%; position: relative; }
-.game-hud { display: flex; justify-content: space-between; align-items: center; padding: 7px 14px; background: rgba(0,0,0,0.85); border-bottom: 1px solid rgba(255,255,255,0.06); }
+.game-hud { display: none; justify-content: space-between; align-items: center; padding: 7px 14px; background: rgba(0,0,0,0.85); border-bottom: 1px solid rgba(255,255,255,0.06); }
+body.edit-mode .game-hud { display: flex; }
 .hud-s { display: flex; flex-direction: column; align-items: center; gap: 1px; }
 .hud-l { font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); text-transform: uppercase; }
 .hud-v { font-family: 'Bebas Neue', sans-serif; font-size: 16px; line-height: 1; color:#F5A623; }
@@ -162,6 +163,10 @@ body.cta-active { background: #000; }
 
 /* Persistent item counter (bottom-left) */
 #item-counter { position:absolute; left:14px; top:610px; z-index:25; display:none; padding:8px 14px; background:rgba(26,43,74,0.85); border:1.5px solid rgba(41,171,226,0.35); border-radius:8px; font-family:'IBM Plex Mono',monospace; pointer-events:none; }
+
+/* Dev edit toggle — discreet pencil at top-left of game canvas, only AJ uses it */
+#dev-edit-toggle { position:absolute; top:14px; left:14px; z-index:24; width:28px; height:28px; border-radius:6px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.4); font-size:13px; cursor:pointer; transition:opacity 0.2s, background 0.2s, color 0.2s; opacity:0.35; padding:0; display:flex; align-items:center; justify-content:center; }
+#dev-edit-toggle:hover { opacity:1; background:rgba(0,0,0,0.7); color:#fff; }
 #item-counter.show { display:flex; align-items:center; gap:10px; }
 #item-counter .ic-label { font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.55); }
 #item-counter .ic-val { font-size:18px; color:#F5A623; font-weight:700; }
@@ -413,13 +418,23 @@ body.cta-active { background: #000; }
     <button class="dbg-btn" onclick="exportBoxes()">⬇ Export</button>
   </div>
   <div id="export-pane"><div id="export-head"><span>Collision data — paste back to Claude</span><button onclick="closeExport()">✕</button></div><textarea id="export-text" readonly></textarea><button class="dbg-btn" style="width:100%;margin-top:6px;" onclick="copyExport()">Copy</button></div>
+
+  <!-- Hidden dev edit toggle — only AJ knows it's there. Bottom-right of canvas. -->
+  <button id="dev-edit-toggle" onclick="toggleDevEdit()" title="Edit mode" aria-label="Edit">✎</button>
 </div>
 </div>
 
 <script>
-  // Show edit controls only when URL has #edit (so AJ can still access the editor)
+  function toggleDevEdit(){
+    var bar = document.getElementById('dbg-bar');
+    var visible = bar.style.display !== 'none';
+    bar.style.display = visible ? 'none' : '';
+    document.body.classList.toggle('edit-mode', !visible);
+  }
+  // Auto-open editor if URL has #edit
   if(window.location.hash === '#edit'){
     document.getElementById('dbg-bar').style.display = '';
+    document.body.classList.add('edit-mode');
   }
 </script>
 <script src="/propertywalk.js"></script>
