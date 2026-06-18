@@ -856,13 +856,13 @@ var ITEM_COLORS = {
   package: '#A0522D',  // cardboard brown
 };
 var ITEM_EMOJI  = { key:'🔑', phone:'📞', coffee:'☕', cash:'💵', package:'📦' };
-// Quick affirmation shown in the objective banner each time an item is collected
+// Quick affirmation shown in the pickup pill each time an item is collected
 var ITEM_PICKUP_MSG = {
-  key:     "You've collected your master key!",
-  phone:   "You've got your phone — no more excuses!",
-  coffee:  "Coffee in hand. Energy unlocked.",
-  cash:    "Rent money collected!",
-  package: "Package retrieved. Almost there...",
+  key:     "You've collected a master key!",
+  phone:   "You've collected a phone!",
+  coffee:  "You've collected a coffee!",
+  cash:    "You've collected rent money!",
+  package: "You've collected a package!",
 };
 var itemsSheet = new Image(); itemsSheet.src = ITEMS_SHEET_URL;
 
@@ -887,11 +887,11 @@ var ZOMBIE_CHARACTERS = {
   // mirrorDir: 'none' | 'left' | 'right' — workaround for sheets where one of
   // the side rows is unreliable. The opposite row is mirrored to fill the
   // bad row. e.g. mirrorDir='left' means use right row mirrored for left.
+  // spawn: fixed world-pixel start position (marketing tool — no randomness)
   grumpy: {
     url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c90f365d062b2a6e7ee6d_Grumpy_guywalking.png',
     name:'Grumpy', enabled:true, chaseSpeed:0.2,
-    // Sheet has mixed-facing cells within both side rows — hand-pick only
-    // the cells that face the right direction. Format: [row, col].
+    spawn:{x:505, y:912},
     frameMap:{
       down:  [[0,0],[0,1],[0,2],[0,3]],
       left:  [[1,0],[2,3],[1,0]],
@@ -900,8 +900,8 @@ var ZOMBIE_CHARACTERS = {
     },
   },
   karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen',      enabled:false, mirrorDir:'none',  chaseSpeed:0.5 },
-  complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true,  mirrorDir:'left',  chaseSpeed:0.25 },
-  talkative:  { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c93206b8fa6046c5ee76e_Talkative%20guy.png',  name:'Talkative',  enabled:true,  mirrorDir:'left',  chaseSpeed:0.3, rows:{down:0, right:1, left:2, up:3} },
+  complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true,  mirrorDir:'left',  chaseSpeed:0.25, spawn:{x:1062, y:788} },
+  talkative:  { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c93206b8fa6046c5ee76e_Talkative%20guy.png',  name:'Talkative',  enabled:true,  mirrorDir:'left',  chaseSpeed:0.3, rows:{down:0, right:1, left:2, up:3}, spawn:{x:1255, y:1080} },
 };
 // 4×4 sprite sheet layout — each direction is a row, each row has 4 walk frames.
 //   ROW 0: facing DOWN   (4-frame walk cycle)
@@ -951,7 +951,7 @@ function randomWalkablePoint(){
 // Marketing tool — no randomness so players always hit reachable positions.
 var ITEM_SPAWNS = {
   key:     {x:1258, y:1549},
-  phone:   {x:1683, y:979},
+  phone:   {x:775,  y:1603},
   coffee:  {x:1383, y:652},
   cash:    {x:1000, y:774},
   package: {x:472,  y:594},
@@ -972,20 +972,27 @@ function spawnZombies(){
   Object.keys(ZOMBIE_CHARACTERS).forEach(function(charKey){
     var charDef = ZOMBIE_CHARACTERS[charKey];
     if(!charDef.enabled) return;   // skip characters whose sprite isn't ready yet
-    var p, dx, dy, tries=0;
-    do {
-      p = randomWalkablePoint();
-      dx = p.x-P.x; dy = p.y-P.y;
-      tries++;
-    } while(Math.sqrt(dx*dx+dy*dy) < 500 && tries<50);
+    var p;
+    if(charDef.spawn){
+      // Fixed spawn — marketing tool, no randomness
+      p = { x: charDef.spawn.x, y: charDef.spawn.y };
+    } else {
+      // Fallback: random walkable point, biased far from player
+      var dx, dy, tries=0;
+      do {
+        p = randomWalkablePoint();
+        dx = p.x-P.x; dy = p.y-P.y;
+        tries++;
+      } while(Math.sqrt(dx*dx+dy*dy) < 500 && tries<50);
+    }
     ZOMBIES.push({
       char: charKey,
       x: p.x, y: p.y,
-      facing: 'down',        // start facing toward camera (plain front view)
-      state: 'idle',         // 'idle' | 'alert' | 'chase'
-      fr: 0,                 // walk frame index (0..3)
-      frT: 0,                // walk frame tick counter
-      alertStart: 0,         // performance.now() when she entered alert state
+      facing: 'down',
+      state: 'idle',
+      fr: 0,
+      frT: 0,
+      alertStart: 0,
     });
   });
 }
@@ -1038,19 +1045,32 @@ function updateInventoryHUD(){
 // Total items in the current build.
 var TOTAL_ITEMS = 5;
 
-// Pickup pill — subtle one-line message that appears just above the inventory
-// bar in the bottom-right of the canvas. Fades in/out without using the big
-// objective banner.
+// Pickup pill — pokemon-style char-by-char typing reveal, then holds, then fades.
 var _pickupTimer = null;
+var _pickupTypeTimer = null;
 function showPickupMsg(text){
   var el = document.getElementById('pickup-msg');
   if(!el) return;
-  el.textContent = text;
+  // Cancel any in-flight reveal
+  if(_pickupTypeTimer) clearInterval(_pickupTypeTimer);
+  if(_pickupTimer)     clearTimeout(_pickupTimer);
+  el.textContent = '';
   el.classList.remove('show');
-  void el.offsetWidth; // reflow to restart CSS animation
+  void el.offsetWidth; // reflow to restart fade-in animation
   el.classList.add('show');
-  if(_pickupTimer) clearTimeout(_pickupTimer);
-  _pickupTimer = setTimeout(function(){ el.classList.remove('show'); }, 2200);
+  // Type out characters one at a time. ~40ms/char feels game-boy paced.
+  var i = 0;
+  _pickupTypeTimer = setInterval(function(){
+    if(i >= text.length){
+      clearInterval(_pickupTypeTimer);
+      _pickupTypeTimer = null;
+      // Hold the finished message, then fade out
+      _pickupTimer = setTimeout(function(){ el.classList.remove('show'); }, 1800);
+      return;
+    }
+    el.textContent += text.charAt(i);
+    i++;
+  }, 40);
 }
 
 function showObjectiveBanner(text){
