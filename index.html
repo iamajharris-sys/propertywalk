@@ -190,6 +190,62 @@ body { font-family: 'Inter', sans-serif; background: #0a0a14; color: #fff; min-h
 .victory-stamp span { color:#29ABE2; font-size:54px; display:block; margin-top:6px; }
 .victory-body { font-size:15px; color:rgba(255,255,255,0.75); margin:28px 0 24px; line-height:1.6; }
 .victory-body span { color:#7CFC9A; font-weight:600; }
+
+/* MONKEY BUSINESS CTA — appears after final cutscene */
+#quote-cta-screen {
+  position:absolute; top:0; left:0; right:0; bottom:0;
+  background:rgba(15,30,45,0.96);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  display:none; align-items:center; justify-content:center;
+  z-index:70; padding:24px;
+}
+#quote-cta-screen.show { display:flex; animation:resignFade 0.6s ease-out; }
+.quote-cta-inner { text-align:center; max-width:460px; }
+.cta-eyebrow {
+  font-family:'IBM Plex Mono',monospace; font-size:10px;
+  letter-spacing:0.3em; color:rgba(255,255,255,0.4);
+  text-transform:uppercase; margin-bottom:18px;
+}
+.cta-headline {
+  font-family:'Bebas Neue',sans-serif; font-size:54px; line-height:1.0;
+  color:#fff; margin-bottom:18px; letter-spacing:0.02em;
+}
+.cta-headline span { color:#29ABE2; }
+.cta-sub {
+  font-size:15px; color:rgba(255,255,255,0.72); margin-bottom:28px;
+  line-height:1.6;
+}
+.cta-btn {
+  display:inline-block;
+  background:#29ABE2; color:#1A2B4A;
+  text-decoration:none;
+  padding:18px 48px;
+  font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:700;
+  letter-spacing:0.18em; text-transform:uppercase;
+  border:none; border-radius:8px;
+  cursor:pointer;
+  box-shadow:0 10px 28px rgba(41,171,226,0.45);
+  transition:transform 0.15s, box-shadow 0.15s;
+  animation:ctaPulse 1.8s ease-in-out infinite;
+}
+.cta-btn:hover {
+  transform:translateY(-2px);
+  box-shadow:0 14px 32px rgba(41,171,226,0.6);
+}
+@keyframes ctaPulse {
+  0%,100% { box-shadow:0 10px 28px rgba(41,171,226,0.45); }
+  50%     { box-shadow:0 10px 36px rgba(41,171,226,0.75); }
+}
+.cta-secondary {
+  display:block; margin:20px auto 0;
+  background:transparent; color:rgba(255,255,255,0.55);
+  border:none; cursor:pointer;
+  font-family:'IBM Plex Mono',monospace; font-size:11px;
+  letter-spacing:0.12em; text-transform:uppercase;
+  padding:8px 16px;
+  transition:color 0.15s;
+}
+.cta-secondary:hover { color:#fff; }
 </style>
 </head>
 <body>
@@ -257,6 +313,17 @@ body { font-family: 'Inter', sans-serif; background: #0a0a14; color: #fff; min-h
         and kept the building running smooth.
       </div>
       <button class="resign-btn" onclick="returnToMenu()">Back to Menu</button>
+    </div>
+  </div>
+
+  <!-- MONKEY BUSINESS CTA — appears after final cutscene ends -->
+  <div id="quote-cta-screen">
+    <div class="quote-cta-inner">
+      <div class="cta-eyebrow">Clean Towers</div>
+      <div class="cta-headline">when monkey business<br>is <span>sometimes okay</span></div>
+      <div class="cta-sub">protect your building from nagging tenants.<br>let our gorilla handle the windows.</div>
+      <a class="cta-btn" href="https://www.cleantowers.com/quote-my-building" target="_self" rel="noopener">Get a Quote →</a>
+      <button class="cta-secondary" onclick="returnToMenu()">Play Again</button>
     </div>
   </div>
 
