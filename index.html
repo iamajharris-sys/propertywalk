@@ -263,14 +263,16 @@ body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); co
   text-shadow:0 1px 3px rgba(0,0,0,0.8);
 }
 #pickup-msg.show {
-  animation:pickupPop 2.2s ease-out forwards;
+  animation:pickupFadeIn 0.25s ease-out forwards;
+  transition:opacity 0.5s, transform 0.5s;
 }
-@keyframes pickupPop {
+#pickup-msg.show:not(.show) { opacity:0; }
+@keyframes pickupFadeIn {
   0%   { opacity:0; transform:translateY(4px); }
-  12%  { opacity:1; transform:translateY(0); }
-  82%  { opacity:1; transform:translateY(0); }
-  100% { opacity:0; transform:translateY(-4px); }
+  100% { opacity:1; transform:translateY(0); }
 }
+/* When .show is removed, fade out via transition (set on .show) */
+#pickup-msg:not(.show) { opacity:0; transform:translateY(-4px); transition:opacity 0.5s, transform 0.5s; }
 @keyframes pop { 0%{transform:scale(0.4);} 60%{transform:scale(1.2);} 100%{transform:scale(1);} }
 
 /* Resign / game-over screen */
