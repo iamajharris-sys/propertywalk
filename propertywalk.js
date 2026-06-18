@@ -1072,8 +1072,10 @@ function playFinalCutscene(){
 
 function showQuoteCTA(){
   var cta = document.getElementById('quote-cta-screen');
-  if(cta){ cta.classList.add('show'); }
-  else {
+  if(cta){
+    cta.classList.add('show');
+    document.body.classList.add('cta-active');
+  } else {
     // Fallback to old victory screen if CTA not present
     var el = document.getElementById('victory-screen');
     if(el) el.classList.add('show');
@@ -1368,6 +1370,7 @@ function returnToMenu(){
   if(v) v.classList.remove('show');
   var cta = document.getElementById('quote-cta-screen');
   if(cta) cta.classList.remove('show');
+  document.body.classList.remove('cta-active');
   document.getElementById('menu-screen').classList.remove('hidden');
   fadeInMenuMusic();
 }
