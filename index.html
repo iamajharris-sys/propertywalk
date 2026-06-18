@@ -217,14 +217,44 @@ body.cta-active { background: #000; }
 }
 
 .cta-eyebrow {
-  font-family:'IBM Plex Mono',monospace; font-size:11px;
-  letter-spacing:0.35em; color:rgba(255,255,255,0.45);
-  text-transform:uppercase; margin-bottom:80px;
+  font-family:'Inter',sans-serif; font-weight:400; font-size:16px;
+  color:rgba(255,255,255,0.82);
+  margin-bottom:80px;
+  line-height:1.65;
 }
 .cta-headline {
-  font-family:'Bebas Neue',sans-serif; font-size:72px; line-height:1.05;
-  color:rgba(255,255,255,0.82); margin-bottom:120px; letter-spacing:0.02em;
+  font-family:'Inter',sans-serif; font-weight:300; font-size:48px; line-height:1.15;
+  color:rgba(255,255,255,0.82); margin-bottom:120px; letter-spacing:0.01em;
   white-space:nowrap;
+}
+
+/* Mobile (≤768px): allow headline to wrap, scale everything down */
+@media (max-width: 768px) {
+  #quote-cta-screen { padding:60px 20px 24px; }
+  .quote-cta-inner { max-width:100%; padding:0 8px; }
+  .cta-headline {
+    font-size:30px;
+    white-space:normal;
+    line-height:1.25;
+    margin-bottom:64px;
+    letter-spacing:0.005em;
+  }
+  .cta-eyebrow {
+    font-size:13px;
+    margin-bottom:48px;
+  }
+  .cta-sub {
+    font-size:14px;
+    margin-bottom:28px;
+  }
+  .cta-btn {
+    padding:14px 32px;
+    font-size:11px;
+  }
+  .cta-logo {
+    max-width:96px;
+    margin:36px auto 0;
+  }
 }
 .cta-sub {
   font-size:16px; color:rgba(255,255,255,0.82); margin-bottom:38px;
