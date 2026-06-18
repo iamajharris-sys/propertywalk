@@ -607,14 +607,11 @@ var menuMusic = new Audio(MENU_MUSIC_URL);
 menuMusic.loop = true;
 menuMusic.volume = 0.6;
 var MUSIC_VOL = 0.6;
-// Mute state persists across refreshes. Default = muted on first visit;
-// once the user taps unmute, they stay unmuted.
+// Always boot muted on page load so the user explicitly opts in to audio.
+// We no longer persist this across refreshes — every fresh visit starts
+// with the "tap to unmute" prompt visible.
 var LS_MUTE_KEY = 'pw_muted_v1';
 var IS_MUTED = true;
-try {
-  var stored = localStorage.getItem(LS_MUTE_KEY);
-  if(stored === 'false') IS_MUTED = false;
-} catch(e) { /* localStorage blocked — fall back to default muted */ }
 var musicFadeT = null;
 
 function tryPlayMenuMusic(){
@@ -1485,16 +1482,7 @@ window.addEventListener('load',function(){
   loadFoot();
   loadMap();
   placePlayer();
-  // Sync mute button visual state with stored preference (in case the user
-  // previously unmuted — their choice persists across refreshes).
-  if(!IS_MUTED){
-    var btn = document.getElementById('mute-btn');
-    var iconOn  = document.getElementById('mute-icon-on');
-    var iconOff = document.getElementById('mute-icon-off');
-    if(btn) btn.classList.add('unmuted');
-    if(iconOn) iconOn.style.display='block';
-    if(iconOff) iconOff.style.display='none';
-  }
+  // Mute is always ON at boot — user must tap to unmute on every visit.
   tryPlayMenuMusic();
   requestAnimationFrame(loop);
 });
