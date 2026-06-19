@@ -1722,7 +1722,13 @@ function triggerGameOver(byZombie){
   var byName = ZOMBIE_CHARACTERS[byZombie.char].name;
   document.getElementById('resign-by').textContent = byName;
   document.getElementById('resign-screen').classList.add('show');
-  stopGameplayMusic();
+  // Hard-stop gameplay music immediately (no fade) — prevents music from
+  // bleeding through the game-over screen on mobile, where the fade can
+  // get interrupted by the next play() unlock.
+  if(gameplayFadeT){ clearInterval(gameplayFadeT); gameplayFadeT = null; }
+  gameplayMusic.pause();
+  gameplayMusic.currentTime = 0;
+  gameplayMusic.volume = MUSIC_VOL;
 }
 function returnToMenu(){
   STATE = 'menu';
