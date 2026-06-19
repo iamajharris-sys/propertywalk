@@ -314,6 +314,14 @@ function placePlayer(){
       }
     }
   }
+  // Reset sprite facing + animation state every time the player spawns,
+  // so Play Again / restart never inherits the last frame from a
+  // previous run (e.g. facing left mid-step).
+  P.facing = 'down';
+  P.fr = 0;
+  P.frT = 0;
+  P.moving = false;
+  P.celebrating = false;
 }
 
 // Convert world coords to screen coords given the camera + zoom
