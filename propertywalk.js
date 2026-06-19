@@ -956,7 +956,7 @@ function randomWalkablePoint(){
 // Marketing tool — no randomness so players always hit reachable positions.
 var ITEM_SPAWNS = {
   key:     {x:1258, y:1549},
-  phone:   {x:775,  y:1603},
+  phone:   {x:210,  y:1700},
   coffee:  {x:1747, y:1123},
   cash:    {x:1643, y:412},
   package: {x:472,  y:594},
