@@ -156,7 +156,7 @@ body.edit-mode .game-hud { display: flex; }
 #inv-hud.show { display:block; }
 
 /* Objective banner — slides in on game start, auto-hides after ~8s */
-#obj-banner { position:absolute; left:50%; top:80px; transform:translate(-50%, -8px); max-width:480px; padding:12px 22px; background:rgba(26,43,74,0.95); color:#fff; border:1.5px solid rgba(41,171,226,0.45); border-radius:10px; font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.5; text-align:center; box-shadow:0 8px 28px rgba(0,0,0,0.35); z-index:30; opacity:0; pointer-events:none; transition:opacity 1s ease-out, transform 1s ease-out; }
+#obj-banner { position:absolute; left:50%; top:80px; transform:translate(-50%, -8px); max-width:320px; padding:12px 22px; background:rgba(26,43,74,0.95); color:#fff; border:1.5px solid rgba(41,171,226,0.45); border-radius:10px; font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.5; text-align:center; box-shadow:0 8px 28px rgba(0,0,0,0.35); z-index:30; opacity:0; pointer-events:none; transition:opacity 1s ease-out, transform 1s ease-out; }
 #obj-banner.show { opacity:1; transform:translate(-50%, 0); transition:opacity 0.5s ease-out, transform 0.5s ease-out; }
 @keyframes objSlideIn { from{opacity:0; transform:translate(-50%,-12px);} to{opacity:1; transform:translate(-50%,0);} }
 @keyframes objFade { to{opacity:0;} }
