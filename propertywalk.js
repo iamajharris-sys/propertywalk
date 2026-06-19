@@ -56,8 +56,8 @@ var mapImg = new Image(); var mapReady=false, mapFailed=false;
 var WORLD = { w: 2048, h: 2048 };
 
 // ── COLLISION BOXES (world-pixel coords for the 2048x2048 New Map) ──
-// v9 — AJ's latest hand-tuned export (115 boxes). Minor refinements to
-// a couple of boxes near the central atrium for tighter clipping.
+// v10 — AJ's latest hand-tuned export (116 boxes). Adds one more box
+// at the lower-left storage area.
 var COLLISION_DEFAULTS = [
   {x:290,y:178,w:1425,h:20},
   {x:140,y:1780,w:1667,h:50},
@@ -174,12 +174,13 @@ var COLLISION_DEFAULTS = [
   {x:879,y:1292,w:43,h:36},
   {x:1495,y:588,w:54,h:43},
   {x:1493,y:634,w:42,h:41},
+  {x:290,y:1650,w:180,h:62},
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
-// v9 = AJ's latest export (115 boxes, atrium refinements). Bumping the
-//      key flushes the v8 cache from any returning users.
-var LS_KEY = 'pw_collisions_v9';
+// v10 = AJ's latest export (116 boxes). Bumping the key flushes the v9
+//       cache from any returning users.
+var LS_KEY = 'pw_collisions_v10';
 var COLLISIONS = [];
 var LS_OK = true;  // becomes false if localStorage is blocked (e.g. preview sandbox)
 function loadCollisions(){
