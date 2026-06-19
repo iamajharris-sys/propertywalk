@@ -56,8 +56,8 @@ var mapImg = new Image(); var mapReady=false, mapFailed=false;
 var WORLD = { w: 2048, h: 2048 };
 
 // ── COLLISION BOXES (world-pixel coords for the 2048x2048 New Map) ──
-// v10 — AJ's latest hand-tuned export (116 boxes). Adds one more box
-// at the lower-left storage area.
+// v11 — AJ's final hand-tuned export (118 boxes). Fine-tuning around
+// the lower-left storage area and statue placement.
 var COLLISION_DEFAULTS = [
   {x:290,y:178,w:1425,h:20},
   {x:140,y:1780,w:1667,h:50},
@@ -104,7 +104,7 @@ var COLLISION_DEFAULTS = [
   {x:1658,y:710,w:213,h:148},
   {x:1183,y:620,w:123,h:113},
   {x:823,y:1091,w:44,h:126},
-  {x:670,y:1443,w:67,h:73},
+  {x:694,y:1412,w:33,h:24},
   {x:761,y:1156,w:72,h:60},
   {x:897,y:1617,w:370,h:350},
   {x:237,y:1343,w:305,h:87},
@@ -117,7 +117,7 @@ var COLLISION_DEFAULTS = [
   {x:1533,y:1273,w:280,h:70},
   {x:1513,y:1343,w:357,h:80},
   {x:100,y:1073,w:320,h:73},
-  {x:643,y:1467,w:50,h:303},
+  {x:625,y:1464,w:67,h:308},
   {x:1180,y:1700,w:60,h:260},
   {x:757,y:1633,w:80,h:140},
   {x:1337,y:1497,w:87,h:280},
@@ -175,12 +175,14 @@ var COLLISION_DEFAULTS = [
   {x:1495,y:588,w:54,h:43},
   {x:1493,y:634,w:42,h:41},
   {x:290,y:1650,w:180,h:62},
+  {x:711,y:1393,w:20,h:41},
+  {x:669,y:1435,w:25,h:26},
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
-// v10 = AJ's latest export (116 boxes). Bumping the key flushes the v9
+// v11 = AJ's final export (118 boxes). Bumping the key flushes the v10
 //       cache from any returning users.
-var LS_KEY = 'pw_collisions_v10';
+var LS_KEY = 'pw_collisions_v11';
 var COLLISIONS = [];
 var LS_OK = true;  // becomes false if localStorage is blocked (e.g. preview sandbox)
 function loadCollisions(){
@@ -1506,7 +1508,7 @@ function updateZombies(){
     if(z.state === 'chase'){
       var charDef = ZOMBIE_CHARACTERS[z.char];
       var chaseMul = (charDef && charDef.chaseSpeed !== undefined) ? charDef.chaseSpeed : ZOMBIE_CHASE_SPD;
-      var spd = P.spd * chaseMul;
+      var spd = P.spd * chaseMul * DT;
       var now = performance.now();
 
       // ── Stuck detection ──
@@ -1569,7 +1571,7 @@ function updateZombies(){
         z.facing = dirToFacing(Math.atan2(moveY, moveX));
       }
       // Animate walk cycle while chasing — alternating mouth open/closed
-      z.frT++;
+      z.frT += DT;
       if(z.frT > ZOMBIE_FRAME_TICK){
         z.fr = (z.fr + 1) % ZOMBIE_WALK_LEN;
         z.frT = 0;
@@ -1758,8 +1760,21 @@ function returnToMenu(){
   fadeInMenuMusic();
 }
 
+// Delta-time tracking — keeps movement speed identical on 60hz / 120hz /
+// any refresh rate. We scale every per-frame movement by DT, where DT=1.0
+// represents one 60fps frame (16.67ms). On a 120hz display each frame is
+// ~8.33ms, so DT=0.5 and per-frame movement is halved — same px/sec.
+var _lastFrameTs = performance.now();
+var DT = 1.0;
 var loop=function(){
   requestAnimationFrame(loop);
+  var _now = performance.now();
+  var _elapsed = _now - _lastFrameTs;
+  _lastFrameTs = _now;
+  // Clamp DT so a hitch / paused tab doesn't catapult sprites across the
+  // map on resume. Cap at 4 frames worth (~67ms) — anything bigger is
+  // treated as "this frame was 4× normal" max.
+  DT = Math.min(4, _elapsed / 16.67);
   P.spd = parseFloat(document.getElementById('speed').value);
   ZOOM = parseFloat(document.getElementById('zoom').value);
   // On mobile (narrow viewport), zoom out an extra 0.1 so more of the
@@ -1787,13 +1802,13 @@ var loop=function(){
 
   var mag=Math.sqrt(ix*ix+iy*iy);
   if(mag>0.12){
-    var vx=(ix/mag)*P.spd, vy=(iy/mag)*P.spd;
+    var vx=(ix/mag)*P.spd*DT, vy=(iy/mag)*P.spd*DT;
     var tryX = Math.max(0,Math.min(WORLD.w, P.x+vx));
     if(canStand(tryX, P.y)) P.x = tryX;
     var tryY = Math.max(0,Math.min(WORLD.h, P.y+vy));
     if(canStand(P.x, tryY)) P.y = tryY;
     P.moving=true;
-    P.frT++; if(P.frT>FRAME_TICK){ P.fr=(P.fr+1)%WALK_LEN; P.frT=0; }
+    P.frT += DT; if(P.frT>FRAME_TICK){ P.fr=(P.fr+1)%WALK_LEN; P.frT=0; }
   } else { P.moving=false; P.fr=0; }
 
   // Update game systems
