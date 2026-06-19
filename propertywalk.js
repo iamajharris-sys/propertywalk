@@ -1720,7 +1720,7 @@ var loop=function(){
   ZOOM = parseFloat(document.getElementById('zoom').value);
   // On mobile (narrow viewport), zoom out an extra 0.1 so more of the
   // map is visible at once. Desktop is untouched.
-  if(window.innerWidth <= 768){ ZOOM = Math.max(0.3, ZOOM - 0.1); }
+  if(window.innerWidth <= 768){ ZOOM = Math.max(0.3, ZOOM - 0.2); }
 
   // movement (normalized; keyboard or joystick) — only when playing AND not celebrating
   var ix=0, iy=0;
