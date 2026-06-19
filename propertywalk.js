@@ -914,7 +914,7 @@ var ZOMBIE_CHARACTERS = {
   },
   karen:      { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a17a74497f7299d29d06199_Karen_sprites.png',    name:'Karen',      enabled:false, mirrorDir:'none',  chaseSpeed:0.5 },
   complainer: { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1bc11755af9680ca4dc350_Angry_lady.png',       name:'Complainer', enabled:true,  mirrorDir:'left',  chaseSpeed:0.5, spawn:{x:1279, y:1365} },
-  talkative:  { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c93206b8fa6046c5ee76e_Talkative%20guy.png',  name:'Talkative',  enabled:true,  mirrorDir:'left',  chaseSpeed:0.6, rows:{down:0, right:1, left:2, up:3}, spawn:{x:1255, y:1080} },
+  talkative:  { url:'https://cdn.prod.website-files.com/69e1dd322050cba61d94bb9a/6a1c93206b8fa6046c5ee76e_Talkative%20guy.png',  name:'Talkative',  enabled:true,  mirrorDir:'left',  chaseSpeed:0.6, detect:480, rows:{down:0, right:1, left:2, up:3}, spawn:{x:1255, y:1080} },
 };
 // 4×4 sprite sheet layout — each direction is a row, each row has 4 walk frames.
 //   ROW 0: facing DOWN   (4-frame walk cycle)
@@ -1479,12 +1479,14 @@ function updateZombies(){
     var z = ZOMBIES[i];
     var dx = P.x - z.x, dy = P.y - z.y;
     var dist = Math.sqrt(dx*dx + dy*dy);
+    // Per-character detection radius override (falls back to global)
+    var _detect = (ZOMBIE_CHARACTERS[z.char] && ZOMBIE_CHARACTERS[z.char].detect !== undefined) ? ZOMBIE_CHARACTERS[z.char].detect : ZOMBIE_DETECT;
 
     // ── State transitions (360° detection — no vision cone) ──
     if(z.state === 'chase'){
       // Lose interest if Sarah escapes far beyond detection (hysteresis).
       // Relentless tenants ignore this — they keep coming once triggered.
-      if(!z.relentless && dist > ZOMBIE_DETECT * 1.5){
+      if(!z.relentless && dist > _detect * 1.5){
         z.state = 'idle';
         // Clear stuck-detection / detour state for next chase
         z._detourUntil = 0;
@@ -1495,7 +1497,7 @@ function updateZombies(){
       //  (1) Sarah escaped detection radius → return to idle immediately
       //  (2) Sarah came within chase trigger distance → start chasing
       //  (3) Stayed in alert too long without (2) → give up, return to idle
-      if(dist > ZOMBIE_DETECT * 1.5){
+      if(dist > _detect * 1.5){
         z.state = 'idle';
       } else if(dist <= ZOMBIE_CHASE_TRIGGER && performance.now() - z.alertStart >= ZOMBIE_ALERT_MS){
         z.state = 'chase';
@@ -1505,7 +1507,7 @@ function updateZombies(){
       }
     } else {
       // Idle: detect Sarah anywhere within radius → enter alert (turn + pause)
-      if(dist <= ZOMBIE_DETECT){
+      if(dist <= _detect){
         z.state = 'alert';
         z.alertStart = performance.now();
         z.facing = dirToFacing(Math.atan2(dy, dx));
