@@ -1091,26 +1091,49 @@ function showPickupMsg(text){
   }, 500);
 }
 
-function showObjectiveBanner(text){
+// showObjectiveBanner(text, opts)
+// opts = { delay (default 1500), hold (default 8200), typed (default false) }
+// When typed=true, message reveals char-by-char like the pickup pill.
+var _objTypeTimer = null;
+var _objHideTimer = null;
+function showObjectiveBanner(text, opts){
+  opts = opts || {};
+  var delay = (opts.delay !== undefined) ? opts.delay : 1500;
+  var hold  = (opts.hold  !== undefined) ? opts.hold  : 8200;
+  var typed = !!opts.typed;
   var el = document.getElementById('obj-banner');
-  if(!el) return;
-  if(text) document.getElementById('obj-text').textContent = text;
-  // Reposition banner vertically — sits just below screen center, comfortably
-  // beneath Sarah's feet on spawn. Use `top` only — don't touch `transform`,
-  // which is used by the slideIn CSS animation.
+  var textEl = document.getElementById('obj-text');
+  if(!el || !textEl) return;
   el.style.top = 'calc(50% + 36px)';
-  // Make sure it's hidden before the 3s delay (in case it was still showing
-  // from a previous call).
   el.classList.remove('show');
-  // 1.5-second delay before the banner slides in — gives the player a beat
-  // to settle in before the objective pops up.
+  // Clear in-flight timers from a previous call
+  if(_objTypeTimer){ clearInterval(_objTypeTimer); _objTypeTimer = null; }
+  if(_objHideTimer){ clearTimeout(_objHideTimer); _objHideTimer = null; }
   setTimeout(function(){
-    void el.offsetWidth; // reflow trick to restart CSS animation
-    el.classList.add('show');
-    // Hard hide after the full animation cycle finishes.
-    // CSS animation: 0.5s slide-in, 7s visible, 1s fade = ~8.2s total.
-    setTimeout(function(){ el.classList.remove('show'); }, 8200);
-  }, 1500);
+    if(typed){
+      // Type characters in one at a time
+      textEl.textContent = '';
+      void el.offsetWidth;
+      el.classList.add('show');
+      var i = 0;
+      _objTypeTimer = setInterval(function(){
+        if(i >= text.length){
+          clearInterval(_objTypeTimer);
+          _objTypeTimer = null;
+          _objHideTimer = setTimeout(function(){ el.classList.remove('show'); }, hold);
+          return;
+        }
+        textEl.textContent += text.charAt(i);
+        i++;
+      }, 40);
+    } else {
+      // Instant reveal
+      textEl.textContent = text;
+      void el.offsetWidth;
+      el.classList.add('show');
+      _objHideTimer = setTimeout(function(){ el.classList.remove('show'); }, hold);
+    }
+  }, delay);
 }
 
 function updateItemCounter(){
@@ -1209,7 +1232,9 @@ function beginGameplay(){
   spawnZombies();
   startGameplayMusic();
   showItemCounter();
-  showObjectiveBanner('This is your property! Collect all 5 power items and head to the roof before the tenants corner you...');
+  // Opening sequence: short intro, then objective types out
+  showObjectiveBanner('This is your property!', { delay:1500, hold:2200 });
+  showObjectiveBanner('Collect all 5 power items before the tenants catch you...', { delay:4000, hold:6500, typed:true });
 }
 
 function triggerVictory(){
@@ -1674,6 +1699,18 @@ function returnToMenu(){
   if(cta) cta.classList.remove('show');
   document.body.classList.remove('cta-active');
   document.getElementById('menu-screen').classList.remove('hidden');
+  // Hard-stop gameplay music immediately (no fade) so it doesn't bleed
+  // into the menu when player taps "Play Again" on mobile
+  if(gameplayFadeT){ clearInterval(gameplayFadeT); gameplayFadeT = null; }
+  gameplayMusic.pause();
+  gameplayMusic.currentTime = 0;
+  gameplayMusic.volume = MUSIC_VOL;
+  // Resume menu music. If the user previously unmuted (we infer from the
+  // mute button state), keep menu unmuted for this returning session.
+  var muteBtn = document.getElementById('mute-btn');
+  if(muteBtn && muteBtn.classList.contains('unmuted')){
+    IS_MUTED = false;
+  }
   fadeInMenuMusic();
 }
 
@@ -1681,6 +1718,9 @@ var loop=function(){
   requestAnimationFrame(loop);
   P.spd = parseFloat(document.getElementById('speed').value);
   ZOOM = parseFloat(document.getElementById('zoom').value);
+  // On mobile (narrow viewport), zoom out an extra 0.1 so more of the
+  // map is visible at once. Desktop is untouched.
+  if(window.innerWidth <= 768){ ZOOM = Math.max(0.3, ZOOM - 0.1); }
 
   // movement (normalized; keyboard or joystick) — only when playing AND not celebrating
   var ix=0, iy=0;
