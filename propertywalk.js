@@ -1325,6 +1325,17 @@ function updateItems(){
           }
         }
       }
+      // ── 4-item trigger: when sarah has collected 4 of 5 items, all
+      //    tenants commit to chase regardless of state or distance.
+      //    Forces the endgame pressure as she runs for the roof.
+      if(PICKUP_ORDER.length === 4){
+        for(var zi=0; zi<ZOMBIES.length; zi++){
+          ZOMBIES[zi].state = 'chase';
+          ZOMBIES[zi].relentless = true;
+          ZOMBIES[zi]._detourUntil = 0;
+          ZOMBIES[zi]._stuckTrackStart = undefined;
+        }
+      }
       // Check if all 5 collected -> victory
       if(INV.key && INV.phone && INV.coffee && INV.cash && INV.package){
         setTimeout(triggerVictory, 250);
