@@ -1568,22 +1568,54 @@ function updateZombies(){
         z.fr = (z.fr + 1) % ZOMBIE_WALK_LEN;
         z.frT = 0;
       }
-      // Apply movement with collision
+      // Apply movement with collision. Separate-axis checks already allow
+      // basic diagonal sliding along walls. Below that, if one axis is
+      // blocked but the other moves freely, we boost the free axis by
+      // ~40% so the tenant rounds corners more smoothly instead of
+      // crawling along the wall at half-speed.
       var ZFB_W = 50, ZFB_H = 30;
       var tryX = z.x + moveX;
       var fbX = {x:tryX-ZFB_W/2, y:z.y-ZFB_H/2, w:ZFB_W, h:ZFB_H};
-      var blocked = false;
+      var blockedX = false;
       for(var c=0; c<COLLISIONS.length; c++){
-        if(rectOverlap(fbX, COLLISIONS[c])){ blocked = true; break; }
+        if(rectOverlap(fbX, COLLISIONS[c])){ blockedX = true; break; }
       }
-      if(!blocked && tryX >= 50 && tryX <= WORLD.w-50) z.x = tryX;
+      var movedX = false;
+      if(!blockedX && tryX >= 50 && tryX <= WORLD.w-50){
+        z.x = tryX;
+        movedX = true;
+      }
       var tryY = z.y + moveY;
       var fbY = {x:z.x-ZFB_W/2, y:tryY-ZFB_H/2, w:ZFB_W, h:ZFB_H};
-      blocked = false;
+      var blockedY = false;
       for(var c=0; c<COLLISIONS.length; c++){
-        if(rectOverlap(fbY, COLLISIONS[c])){ blocked = true; break; }
+        if(rectOverlap(fbY, COLLISIONS[c])){ blockedY = true; break; }
       }
-      if(!blocked && tryY >= 50 && tryY <= WORLD.h-50) z.y = tryY;
+      var movedY = false;
+      if(!blockedY && tryY >= 50 && tryY <= WORLD.h-50){
+        z.y = tryY;
+        movedY = true;
+      }
+      // Corner-rounding boost: if one axis was blocked and we have some
+      // motion intent, try an extra step on the free axis to slide past
+      // the corner faster. Skip if both axes blocked (true wedge).
+      if(blockedX && !blockedY && Math.abs(moveY) > 0.01){
+        var bonusY = moveY * 0.4;
+        var bonusFb = {x:z.x-ZFB_W/2, y:z.y+bonusY-ZFB_H/2, w:ZFB_W, h:ZFB_H};
+        var bb = false;
+        for(var c=0; c<COLLISIONS.length; c++){
+          if(rectOverlap(bonusFb, COLLISIONS[c])){ bb = true; break; }
+        }
+        if(!bb && (z.y+bonusY) >= 50 && (z.y+bonusY) <= WORLD.h-50) z.y += bonusY;
+      } else if(blockedY && !blockedX && Math.abs(moveX) > 0.01){
+        var bonusX = moveX * 0.4;
+        var bonusFb = {x:z.x+bonusX-ZFB_W/2, y:z.y-ZFB_H/2, w:ZFB_W, h:ZFB_H};
+        var bb = false;
+        for(var c=0; c<COLLISIONS.length; c++){
+          if(rectOverlap(bonusFb, COLLISIONS[c])){ bb = true; break; }
+        }
+        if(!bb && (z.x+bonusX) >= 50 && (z.x+bonusX) <= WORLD.w-50) z.x += bonusX;
+      }
     } else if(z.state === 'alert'){
       // Frozen in alert pose — face Sarah, mouth closed (frame 0), no movement
       z.facing = dirToFacing(Math.atan2(dy, dx));
