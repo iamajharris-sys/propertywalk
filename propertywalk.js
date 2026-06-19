@@ -1366,7 +1366,10 @@ function updateItems(){
       }
       // Check if all 5 collected -> victory
       if(INV.key && INV.phone && INV.coffee && INV.cash && INV.package){
-        setTimeout(triggerVictory, 250);
+        // Hold for a beat so the 5th pickup chime + celebration jump are
+        // clearly registered before the cutscene takes over. 250ms felt
+        // rushed on mobile — player barely saw the pickup land.
+        setTimeout(triggerVictory, 1200);
       }
     }
   }
