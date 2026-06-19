@@ -1248,7 +1248,7 @@ function beginGameplay(){
   showItemCounter();
   // Opening sequence: short intro, then objective types out
   showObjectiveBanner('This is your property!', { delay:1500, hold:1950 });
-  showObjectiveBanner('Collect all 5 power items before the tenants catch you...', { delay:4000, hold:4750, typed:true });
+  showObjectiveBanner('Collect all 5 power items before the tenants catch you..', { delay:4000, hold:4750, typed:true });
 }
 
 function triggerVictory(){
