@@ -56,8 +56,8 @@ var mapImg = new Image(); var mapReady=false, mapFailed=false;
 var WORLD = { w: 2048, h: 2048 };
 
 // ── COLLISION BOXES (world-pixel coords for the 2048x2048 New Map) ──
-// v11 — AJ's final hand-tuned export (118 boxes). Fine-tuning around
-// the lower-left storage area and statue placement.
+// v12 — AJ's final-final export (119 boxes). One added box near lower-left
+// statue area + minor tweak to box near hallway.
 var COLLISION_DEFAULTS = [
   {x:290,y:178,w:1425,h:20},
   {x:140,y:1780,w:1667,h:50},
@@ -109,7 +109,7 @@ var COLLISION_DEFAULTS = [
   {x:897,y:1617,w:370,h:350},
   {x:237,y:1343,w:305,h:87},
   {x:1380,y:1510,w:90,h:263},
-  {x:220,y:1410,w:263,h:140},
+  {x:220,y:1410,w:263,h:131},
   {x:940,y:1253,w:87,h:73},
   {x:170,y:1310,w:420,h:40},
   {x:1500,y:1740,w:420,h:40},
@@ -177,12 +177,13 @@ var COLLISION_DEFAULTS = [
   {x:290,y:1650,w:180,h:62},
   {x:711,y:1393,w:20,h:41},
   {x:669,y:1435,w:25,h:26},
+  {x:399,y:1572,w:55,h:112},
 ];
 
 // Per-session edits (overrides). Persists to localStorage on the live site.
-// v11 = AJ's final export (118 boxes). Bumping the key flushes the v10
+// v12 = AJ's final-final export (119 boxes). Bumping the key flushes the v11
 //       cache from any returning users.
-var LS_KEY = 'pw_collisions_v11';
+var LS_KEY = 'pw_collisions_v12';
 var COLLISIONS = [];
 var LS_OK = true;  // becomes false if localStorage is blocked (e.g. preview sandbox)
 function loadCollisions(){
@@ -1497,9 +1498,12 @@ function updateZombies(){
       //  (1) Sarah escaped detection radius → return to idle immediately
       //  (2) Sarah came within chase trigger distance → start chasing
       //  (3) Stayed in alert too long without (2) → give up, return to idle
+      // Chase trigger = global default unless this tenant has a custom detect
+      // (in which case anywhere inside detection counts as "close enough to chase").
+      var _chaseTrigger = (ZOMBIE_CHARACTERS[z.char] && ZOMBIE_CHARACTERS[z.char].detect !== undefined) ? _detect : ZOMBIE_CHASE_TRIGGER;
       if(dist > _detect * 1.5){
         z.state = 'idle';
-      } else if(dist <= ZOMBIE_CHASE_TRIGGER && performance.now() - z.alertStart >= ZOMBIE_ALERT_MS){
+      } else if(dist <= _chaseTrigger && performance.now() - z.alertStart >= ZOMBIE_ALERT_MS){
         z.state = 'chase';
       } else if(performance.now() - z.alertStart >= ZOMBIE_GIVEUP_MS){
         z.state = 'idle';
