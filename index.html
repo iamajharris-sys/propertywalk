@@ -299,7 +299,7 @@ body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); co
   position:fixed; top:0; left:0; right:0; bottom:0;
   background:#000;
   display:none; align-items:flex-start; justify-content:center;
-  z-index:200; padding:80px 24px 24px;
+  z-index:200; padding:24vh 24px 24px;
 }
 #quote-cta-screen.show { display:flex; }
 .quote-cta-inner { text-align:center; max-width:1100px; }
@@ -313,8 +313,8 @@ body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); co
 #quote-cta-screen.show .cta-eyebrow  { animation:ctaRise 1.2s ease-out 0.6s forwards; }
 #quote-cta-screen.show .cta-headline { animation:ctaRise 2.4s ease-out 1.9s forwards; }
 #quote-cta-screen.show .cta-sub      { animation:ctaRise 1.2s ease-out 5.1s forwards; }
-#quote-cta-screen.show .cta-logo     { animation:ctaRise 1.5s ease-out 6.3s forwards; }
-#quote-cta-screen.show .cta-btn      { animation:ctaRise 1.8s ease-out 7.5s forwards; }
+#quote-cta-screen.show .cta-logo     { animation:ctaRise 1.4s ease-out 7.2s forwards; }
+#quote-cta-screen.show .cta-btn      { animation:ctaRise 1.6s ease-out 9.2s forwards; }
 @keyframes ctaRise {
   to { opacity:1; transform:translateY(0); }
 }
@@ -367,27 +367,42 @@ body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); co
 }
 .cta-btn {
   display:inline-block;
-  background:#29ABE2; color:#fff;
+  background:transparent; color:transparent;
   text-decoration:none;
-  padding:14px 36px;
-  font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700;
-  letter-spacing:0.2em; text-transform:uppercase;
-  border:2px solid #7FD4F2; border-radius:8px;
+  border:none; padding:0;
   cursor:pointer;
-  box-shadow:0 8px 22px rgba(41,171,226,0.4);
+  border-radius:12px;
+  box-shadow:0 8px 22px rgba(245,166,35,0.4);
   transition:transform 0.2s, box-shadow 0.2s;
+}
+.cta-btn img {
+  display:block;
+  max-width:260px;
+  width:auto; height:auto;
+  user-select:none;
+  -webkit-user-drag:none;
 }
 .cta-btn:hover {
   transform:translateY(-2px);
-  box-shadow:0 12px 28px rgba(41,171,226,0.55);
+  box-shadow:0 14px 32px rgba(245,166,35,0.65);
 }
-/* Button glow only kicks in after fade-in completes */
+/* Pulse glow on the image button after fade-in completes */
 #quote-cta-screen.show .cta-btn {
-  animation:ctaRise 1.8s ease-out 6.3s forwards, ctaPulse 2.4s ease-in-out 8.3s infinite;
+  animation:ctaRise 1.6s ease-out 9.2s forwards, ctaPulse 1.6s ease-in-out 11s infinite;
 }
 @keyframes ctaPulse {
-  0%,100% { box-shadow:0 8px 22px rgba(41,171,226,0.4); }
-  50%     { box-shadow:0 12px 32px rgba(41,171,226,0.75); }
+  0%,100% { box-shadow:0 8px 22px rgba(245,166,35,0.55), 0 0 0 0 rgba(245,166,35,0); transform:translateY(0); }
+  50%     { box-shadow:0 14px 42px rgba(245,166,35,1), 0 0 0 8px rgba(245,166,35,0.22); transform:translateY(-2px); }
+}
+/* Arrow nudges right inside the pulse to draw the eye toward it */
+.cta-arrow {
+  display:inline-block;
+  margin-left:8px;
+  animation:arrowNudge 1.6s ease-in-out 11s infinite;
+}
+@keyframes arrowNudge {
+  0%,100% { transform:translateX(0); }
+  50%     { transform:translateX(4px); }
 }
 .cta-logo {
   display:block;
@@ -475,7 +490,7 @@ body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); co
       <div class="cta-eyebrow">Clean Towers</div>
       <div class="cta-headline">For when monkey business is sometimes okay</div>
       <div class="cta-sub">protect your building from nagging tenants.</div>
-      <a class="cta-btn" href="https://www.cleantowers.com/quote-my-building" target="_self" rel="noopener">Get a Quote</a>
+      <a class="cta-btn" href="https://www.cleantowers.com/quote-my-building" target="_self" rel="noopener"><img src="/Getaquote.png" alt="Get a Quote" /></a>
       <img class="cta-logo" src="/Greyscale.logo.PNG" alt="Clean Towers" />
     </div>
   </div>
