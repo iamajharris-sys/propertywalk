@@ -1730,9 +1730,10 @@ var loop=function(){
       if(K.up)iy-=1; if(K.down)iy+=1; if(K.left)ix-=1; if(K.right)ix+=1;
     }
   }
-  // Update 4-way facing: prefer horizontal direction if both axes are pressed
-  // (matches the side-walking animation which is the most visually polished).
-  if(Math.abs(ix) > Math.abs(iy)){
+  // Update 4-way facing: prefer horizontal direction whenever it's pressed
+  // alongside a vertical (e.g. up+left = face left, up+right = face right).
+  // Side-walking is the most visually polished animation so we bias toward it.
+  if(Math.abs(ix) >= Math.abs(iy)){
     if(ix > 0.05) P.facing = 'right';
     else if(ix < -0.05) P.facing = 'left';
   } else {
