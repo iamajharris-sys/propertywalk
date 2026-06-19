@@ -316,13 +316,16 @@ body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); co
   opacity:0;
   transform:translateY(-28px);
 }
-#quote-cta-screen.show .cta-eyebrow  { animation:ctaRise 1.2s ease-out 0.6s forwards; }
+#quote-cta-screen.show .cta-eyebrow  { animation:ctaRise 1.2s ease-out 0.6s forwards, ctaFadeOut 1.2s ease-out 9.9s forwards; }
 #quote-cta-screen.show .cta-headline { animation:ctaRise 2.4s ease-out 1.9s forwards; }
 #quote-cta-screen.show .cta-sub      { animation:ctaRise 1.2s ease-out 5.1s forwards; }
 #quote-cta-screen.show .cta-logo     { animation:ctaFall 1.4s ease-out 6.3s forwards; }
 #quote-cta-screen.show .cta-btn      { animation:ctaRise 1.6s ease-out 8.3s forwards; }
 @keyframes ctaRise {
   to { opacity:1; transform:translateY(0); }
+}
+@keyframes ctaFadeOut {
+  to { opacity:0; }
 }
 /* Logo falls down into resting position */
 @keyframes ctaFall {
@@ -377,45 +380,36 @@ body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); co
 }
 .cta-btn {
   display:inline-block;
-  background:transparent; color:transparent;
+  background:#fff;
+  color:#29ABE2;
   text-decoration:none;
-  border:none; padding:0;
+  font-family:'Inter','IBM Plex Mono',sans-serif;
+  font-size:17px;
+  font-weight:700;
+  letter-spacing:0.02em;
+  padding:16px 42px;
+  border:2px solid #6FC5EC;
+  border-radius:999px;
   cursor:pointer;
-  box-shadow:none;
-  transition:transform 0.2s;
+  box-shadow:0 2px 6px rgba(0,0,0,0.06);
+  transition:transform 0.2s ease-out, box-shadow 0.2s ease-out, background 0.2s ease-out;
 }
-.cta-btn img {
-  display:block;
-  max-width:260px;
-  width:auto; height:auto;
-  user-select:none;
-  -webkit-user-drag:none;
-  filter:drop-shadow(0 0 0 transparent);
-  transition:filter 0.3s;
+.cta-btn:hover {
+  transform:translateY(-2px) scale(1.03);
+  box-shadow:0 6px 14px rgba(0,0,0,0.12);
+  background:#F5FBFF;
 }
-.cta-btn:hover { transform:translateY(-2px); }
-.cta-btn:hover img { filter:drop-shadow(0 4px 22px rgba(41,171,226,0.85)); }
-/* Pulse glow on the image button — uses drop-shadow so it traces the
-   button's actual shape (rounded corners) instead of a rectangle. */
+.cta-btn:active {
+  transform:translateY(0) scale(1);
+  box-shadow:0 2px 4px rgba(0,0,0,0.08);
+}
+/* Subtle idle bounce after fade-in completes — gentle vertical breath, no glow */
 #quote-cta-screen.show .cta-btn {
-  animation:ctaRise 1.6s ease-out 8.3s forwards;
+  animation:ctaRise 1.6s ease-out 8.3s forwards, ctaBounce 2.4s ease-in-out 10.1s infinite;
 }
-#quote-cta-screen.show .cta-btn img {
-  animation:ctaPulse 1.6s ease-in-out 10.1s infinite;
-}
-@keyframes ctaPulse {
-  0%,100% { filter:drop-shadow(0 2px 6px rgba(41,171,226,0.55)); transform:translateY(0); }
-  50%     { filter:drop-shadow(0 6px 22px rgba(41,171,226,1)); transform:translateY(-2px); }
-}
-/* Arrow nudges right inside the pulse to draw the eye toward it */
-.cta-arrow {
-  display:inline-block;
-  margin-left:8px;
-  animation:arrowNudge 1.6s ease-in-out 10.1s infinite;
-}
-@keyframes arrowNudge {
-  0%,100% { transform:translateX(0); }
-  50%     { transform:translateX(4px); }
+@keyframes ctaBounce {
+  0%,100% { transform:translateY(0); }
+  50%     { transform:translateY(-3px); }
 }
 .cta-logo {
   display:block;
@@ -503,7 +497,7 @@ body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); co
       <div class="cta-eyebrow">Clean Towers</div>
       <div class="cta-headline">For when monkey business is sometimes okay</div>
       <div class="cta-sub">protect your building from nagging tenants.</div>
-      <a class="cta-btn" href="https://www.cleantowers.com/quote-my-building" target="_self" rel="noopener"><img src="/Getaquote.png" alt="Get a Quote" /></a>
+      <a class="cta-btn" href="https://www.cleantowers.com/quote-my-building" target="_self" rel="noopener">Get a Quote</a>
       <img class="cta-logo" src="/Greyscale.logo.PNG" alt="Clean Towers" />
     </div>
   </div>
