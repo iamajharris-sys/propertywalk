@@ -158,6 +158,47 @@ body.edit-mode .game-hud { display: flex; }
 /* Objective banner — slides in on game start, auto-hides after ~8s */
 #obj-banner { position:absolute; left:50%; top:80px; transform:translate(-50%, -8px); max-width:320px; padding:12px 22px; background:rgba(26,43,74,0.95); color:#fff; border:1.5px solid rgba(41,171,226,0.45); border-radius:10px; font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.5; text-align:center; box-shadow:0 8px 28px rgba(0,0,0,0.35); z-index:30; opacity:0; pointer-events:none; transition:opacity 1s ease-out, transform 1s ease-out; }
 #obj-banner.show { opacity:1; transform:translate(-50%, 0); transition:opacity 0.5s ease-out, transform 0.5s ease-out; }
+/* Inline keyboard-pyramid arrow keys used in the third instruction banner.
+   Layout matches a real keyboard: ↑ centered on top, ← ↓ → row underneath.
+   Each key blinks gently with a small stagger to draw the eye. */
+.arrow-keys-group {
+  display:inline-flex;
+  flex-direction:column;
+  align-items:center;
+  vertical-align:middle;
+  margin:0 8px;
+  gap:2px;
+}
+.arrow-keys-top, .arrow-keys-bottom {
+  display:flex;
+  gap:2px;
+}
+#obj-banner .arrow-key {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:22px;
+  height:22px;
+  background:rgba(41,171,226,0.18);
+  border:1px solid rgba(41,171,226,0.65);
+  border-radius:5px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:13px;
+  font-weight:700;
+  color:#fff;
+  line-height:1;
+  animation:arrowBlink 1.4s ease-in-out infinite;
+  box-shadow:0 0 8px rgba(41,171,226,0.4);
+}
+/* Stagger keys in the natural keyboard "wave" order: up, left, down, right */
+.arrow-keys-top    .arrow-key                 { animation-delay:0s; }
+.arrow-keys-bottom .arrow-key:nth-child(1)    { animation-delay:0.2s; } /* ← */
+.arrow-keys-bottom .arrow-key:nth-child(2)    { animation-delay:0.4s; } /* ↓ */
+.arrow-keys-bottom .arrow-key:nth-child(3)    { animation-delay:0.6s; } /* → */
+@keyframes arrowBlink {
+  0%,100% { background:rgba(41,171,226,0.18); border-color:rgba(41,171,226,0.65); box-shadow:0 0 6px rgba(41,171,226,0.3); }
+  50%     { background:rgba(41,171,226,0.55); border-color:rgba(41,171,226,1);    box-shadow:0 0 14px rgba(41,171,226,0.85); }
+}
 @keyframes objSlideIn { from{opacity:0; transform:translate(-50%,-12px);} to{opacity:1; transform:translate(-50%,0);} }
 @keyframes objFade { to{opacity:0;} }
 
@@ -316,11 +357,11 @@ body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); co
   opacity:0;
   transform:translateY(-28px);
 }
-#quote-cta-screen.show .cta-eyebrow  { animation:ctaRise 1.2s ease-out 0.6s forwards, ctaFadeOut 1.2s ease-out 9.9s forwards; }
+#quote-cta-screen.show .cta-eyebrow  { animation:ctaRise 1.2s ease-out 0.6s forwards, ctaFadeOut 1.2s ease-out 8.9s forwards; }
 #quote-cta-screen.show .cta-headline { animation:ctaRise 2.4s ease-out 1.9s forwards; }
 #quote-cta-screen.show .cta-sub      { animation:ctaRise 1.2s ease-out 5.1s forwards; }
 #quote-cta-screen.show .cta-logo     { animation:ctaFall 1.4s ease-out 6.3s forwards; }
-#quote-cta-screen.show .cta-btn      { animation:ctaRise 1.6s ease-out 8.3s forwards; }
+#quote-cta-screen.show .cta-btn      { animation:ctaRise 1.6s ease-out 7.3s forwards; }
 @keyframes ctaRise {
   to { opacity:1; transform:translateY(0); }
 }
@@ -412,7 +453,7 @@ body.edit-mode #dev-edit-toggle { top:50px; background:rgba(245,166,35,0.85); co
 .cta-btn:hover .cta-arrow { transform:translateX(4px); }
 /* After fade-in completes, a gentle glow pulse — no movement */
 #quote-cta-screen.show .cta-btn {
-  animation:ctaRise 1.6s ease-out 8.3s forwards, ctaGlow 2.6s ease-in-out 10.1s infinite;
+  animation:ctaRise 1.6s ease-out 7.3s forwards, ctaGlow 2.6s ease-in-out 9.1s infinite;
 }
 @keyframes ctaGlow {
   0%,100% { box-shadow:0 0 18px rgba(41,171,226,0.45), 0 2px 8px rgba(0,0,0,0.15); }
