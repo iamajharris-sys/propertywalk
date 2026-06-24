@@ -799,7 +799,8 @@ gameplayMusic.volume = MUSIC_VOL;
 var gameplayFadeT = null;
 
 function startGameplayMusic(){
-  if(IS_MUTED){ return; }
+  // Gameplay music always plays — the mute toggle is a menu-music control
+  // only. Once Start Game is pressed, the game has its own soundtrack.
   if(gameplayFadeT){ clearInterval(gameplayFadeT); gameplayFadeT=null; }
   gameplayMusic.currentTime = 0;
   gameplayMusic.volume = 0;
@@ -829,7 +830,7 @@ pickupSfx.volume = 0.7;
 pickupSfx.preload = 'auto';
 
 function playPickupSfx(){
-  if(IS_MUTED) return;
+  // Pickup SFX always plays — the mute toggle only controls menu music.
   try {
     // Rewind the original (already-unlocked-on-iOS) element. We lose the
     // ability to overlap two pickups within ~700ms, but that's better than
@@ -1229,6 +1230,7 @@ function startGame(){
   var video  = document.getElementById('cutscene-video');
   screen.classList.add('show');
   video.currentTime = 0;
+  video.muted = false;   // cutscene audio always plays — mute is menu-only
   // Wire up the end handler once
   if(!video._wired){
     video.addEventListener('ended', beginGameplay);
@@ -1287,7 +1289,7 @@ function playFinalCutscene(){
   video.style.display = 'block';
   cs.classList.add('show');
   video.currentTime = 0;
-  video.muted = IS_MUTED;
+  video.muted = false;  // gameplay/cutscene audio always plays — mute is menu-only
   // Track whether we've already advanced past the cutscene to prevent double-fire
   var advanced = false;
   function advance(){
