@@ -1115,6 +1115,7 @@ function showObjectiveBanner(text, opts){
   var delay = (opts.delay !== undefined) ? opts.delay : 1500;
   var hold  = (opts.hold  !== undefined) ? opts.hold  : 8200;
   var typed = !!opts.typed;
+  var html  = !!opts.html;
   var el = document.getElementById('obj-banner');
   var textEl = document.getElementById('obj-text');
   if(!el || !textEl) return;
@@ -1124,7 +1125,13 @@ function showObjectiveBanner(text, opts){
   if(_objTypeTimer){ clearInterval(_objTypeTimer); _objTypeTimer = null; }
   if(_objHideTimer){ clearTimeout(_objHideTimer); _objHideTimer = null; }
   setTimeout(function(){
-    if(typed){
+    if(html){
+      // HTML mode: instant reveal but can include styled inline markup
+      textEl.innerHTML = text;
+      void el.offsetWidth;
+      el.classList.add('show');
+      _objHideTimer = setTimeout(function(){ el.classList.remove('show'); }, hold);
+    } else if(typed){
       // Type characters in one at a time
       textEl.textContent = '';
       void el.offsetWidth;
@@ -1246,9 +1253,10 @@ function beginGameplay(){
   spawnZombies();
   startGameplayMusic();
   showItemCounter();
-  // Opening sequence: short intro, then objective types out
+  // Opening sequence: short intro, then objective types out, then controls
   showObjectiveBanner('This is your property!', { delay:1500, hold:1950 });
   showObjectiveBanner('Collect all 5 power items before the tenants catch you..', { delay:4000, hold:4750, typed:true });
+  showObjectiveBanner('To move, use the<span class="arrow-keys-group"><span class="arrow-keys-top"><span class="arrow-key">↑</span></span><span class="arrow-keys-bottom"><span class="arrow-key">←</span><span class="arrow-key">↓</span><span class="arrow-key">→</span></span></span>arrow keys, or your finger if you\'re on mobile.', { delay:10000, hold:5000, html:true });
 }
 
 function triggerVictory(){
@@ -1362,17 +1370,6 @@ function updateItems(){
             ZOMBIES[zi]._stuckTrackStart = undefined;
             break;
           }
-        }
-      }
-      // ── 4-item trigger: when sarah has collected 4 of 5 items, all
-      //    tenants commit to chase regardless of state or distance.
-      //    Forces the endgame pressure as she runs for the roof.
-      if(PICKUP_ORDER.length === 4){
-        for(var zi=0; zi<ZOMBIES.length; zi++){
-          ZOMBIES[zi].state = 'chase';
-          ZOMBIES[zi].relentless = true;
-          ZOMBIES[zi]._detourUntil = 0;
-          ZOMBIES[zi]._stuckTrackStart = undefined;
         }
       }
       // Check if all 5 collected -> victory
