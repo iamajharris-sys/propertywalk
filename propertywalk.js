@@ -1257,8 +1257,8 @@ function beginGameplay(){
   showItemCounter();
   // Opening sequence: short intro, then objective types out, then controls
   showObjectiveBanner('This is your property!', { delay:1500, hold:1950 });
-  showObjectiveBanner('Collect all 5 power items before the tenants catch you..', { delay:4000, hold:4750, typed:true });
-  showObjectiveBanner('To move, use the<span class="arrow-keys-group"><span class="arrow-keys-top"><span class="arrow-key">↑</span></span><span class="arrow-keys-bottom"><span class="arrow-key">←</span><span class="arrow-key">↓</span><span class="arrow-key">→</span></span></span>arrow keys, or your finger if you\'re on mobile.', { delay:10000, hold:5000, html:true });
+  showObjectiveBanner('Collect all 5 power items before the tenants catch you..', { delay:4000, hold:3500, typed:true });
+  showObjectiveBanner('To move, use the<span class="arrow-keys-group"><span class="arrow-keys-top"><span class="arrow-key">↑</span></span><span class="arrow-keys-bottom"><span class="arrow-key">←</span><span class="arrow-key">↓</span><span class="arrow-key">→</span></span></span>arrow keys, or your finger if you\'re on mobile.', { delay:9500, hold:6500, html:true });
 }
 
 function triggerVictory(){
