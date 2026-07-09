@@ -1903,4 +1903,16 @@ window.addEventListener('load',function(){
   // Mute is always ON at boot — user must tap to unmute on every visit.
   tryPlayMenuMusic();
   requestAnimationFrame(loop);
+  // Autoplay support for email / marketing links: appending ?autoplay=1
+  // (or ?play=1) to the URL bypasses the menu and jumps straight into
+  // the opening cutscene → gameplay. The click on the email link counts
+  // as the user gesture that unlocks audio.
+  try {
+    var qp = new URLSearchParams(window.location.search);
+    if(qp.get('autoplay') === '1' || qp.get('play') === '1'){
+      // Small delay so the map + collisions finish loading before the
+      // cutscene overlays them (prevents a flash of un-styled menu).
+      setTimeout(function(){ startGame(); }, 100);
+    }
+  } catch(e){ /* URLSearchParams unsupported — skip autoplay silently */ }
 });
